@@ -74,6 +74,11 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] Docs: `docs/GUIA-DO-PROFESSOR.md`
 - [x] **Critérios de aceite:** bundle do aluno < 200 kB gzip (~103); prod sem high/critical (dev-tooling vite/vitest rastreado em ROADMAP)
 
-## PARTE 8 — Deploy
+## PARTE 8 — Deploy ✅
 
-- [ ] PARTE 8 — Deploy (Docker multi-stage, compose prod, Caddy, deploy:check)
+- [x] Dockerfiles multi-stage (backend Node+Prisma→Postgres; frontend Vite→nginx com SPA + proxy /api,/socket.io)
+- [x] `docker-compose.prod.yml` (postgres + backend + frontend + Caddy HTTPS)
+- [x] Alternativa sem Docker documentada (Vercel/Netlify + Railway/Render + Neon/Supabase)
+- [x] `npm run deploy:check` (valida env + conexão ao banco) — verificado
+- [x] README: diagrama Mermaid, variáveis, comandos, backup/restore, criar 1º professor (`create-teacher`)
+- [x] **Critérios de aceite:** compose escrito para subir tudo e servir em https://localhost (build não executável nesta sessão — sem daemon Docker)

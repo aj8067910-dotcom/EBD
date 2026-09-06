@@ -1,0 +1,65 @@
+# Production stack: PostgreSQL + backend (Fastify/Socket.IO) + frontend (nginx)
+# behind Caddy for automatic HTTPS.
+#
+#   JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up --build
+#
+# Then open https://localhost (accept the local CA warning in dev).
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-koinonia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-koinonia}
+      POSTGRES_DB: ${POSTGRES_DB:-koinonia}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-koinonia} -d ${POSTGRES_DB:-koinonia}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-koinonia}:${POSTGRES_PASSWORD:-koinonia}@postgres:5432/${POSTGRES_DB:-koinonia}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (e.g. openssl rand -hex 32)}
+      PORT: '3333'
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_WS_URL: ''
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

@@ -22,7 +22,8 @@
     "lint": "npm run lint -w shared && npm run lint -w backend && npm run lint -w frontend",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "prisma:migrate": "npm run prisma:migrate -w backend",
-    "prisma:seed": "npm run prisma:seed -w backend"
+    "prisma:seed": "npm run prisma:seed -w backend",
+    "deploy:check": "npm run deploy:check -w backend"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",

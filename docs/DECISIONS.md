@@ -195,3 +195,25 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   navegador vem de `playwright install`; local usa `PW_CHROMIUM_PATH`.
 - **CI**: `.github/workflows/ci.yml` roda lint + build + unit/integração + e2e.
 - **Docs**: `docs/GUIA-DO-PROFESSOR.md`.
+
+## PARTE 8 — Deploy
+
+- **Dockerfiles multi-stage** com contexto no **raiz do monorepo** (para resolver
+  o workspace `@koinonia/shared`). Backend: instala deps, **troca o provider do
+  Prisma para `postgresql`** via `sed` antes do `prisma generate` (o schema já é
+  portável — JSON como texto, enums como string), compila e, no runtime, roda
+  `prisma db push` + `node dist/server.js`. Frontend: build Vite → **nginx**
+  servindo o SPA com fallback e **proxy** de `/api` (prefixo removido) e
+  `/socket.io` (com upgrade WebSocket) para o backend.
+- **Same-origin em produção**: o front é buildado com `VITE_API_URL=/api` e
+  `VITE_WS_URL=''` (Socket.IO usa a origem atual, path `/socket.io`), tudo
+  atrás do nginx/Caddy — sem CORS cross-site.
+- **Caddy** faz HTTPS automático (`localhost` via CA local; Let's Encrypt para
+  domínio real) e faz reverse-proxy para o nginx do frontend.
+- **`prisma db push`** em vez de `migrate deploy` no runtime: as migrations
+  commitadas são do dialeto SQLite; `db push` é agnóstico de provider e aplica o
+  schema direto no Postgres — pragmático para este porte.
+- **`deploy:check`** valida env (DATABASE_URL, JWT_SECRET não-exemplo) e a
+  conexão ao banco; **`create-teacher`** provisiona o primeiro professor.
+- **Sem Docker**: documentada a via gerenciada (Vercel/Netlify + Railway/Render
+  com WebSocket + Neon/Supabase).

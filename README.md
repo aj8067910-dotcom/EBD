@@ -42,6 +42,37 @@ npm run dev
 
 O backend sobe em `http://localhost:3333` e o frontend em `http://localhost:5173`.
 
+### Arquitetura (produção)
+
+```mermaid
+flowchart LR
+  Aluno[["📱 Aluno (celular)"]]
+  Professor[["🧑‍🏫 Professor"]]
+  Projetor[["📽️ Projetor /screen"]]
+
+  subgraph Edge
+    Caddy["Caddy (HTTPS automático)"]
+  end
+  subgraph Web
+    Nginx["frontend (nginx)\nSPA + proxy /api,/socket.io"]
+  end
+  subgraph App
+    Backend["backend\nFastify + Socket.IO"]
+  end
+  DB[("PostgreSQL")]
+
+  Aluno -->|HTTPS/WSS| Caddy
+  Professor -->|HTTPS/WSS| Caddy
+  Projetor -->|HTTPS/WSS| Caddy
+  Caddy --> Nginx
+  Nginx -->|/api| Backend
+  Nginx -->|/socket.io| Backend
+  Backend --> DB
+```
+
+O `/shared` (tipos + schemas Zod) é consumido por back e front, garantindo o
+mesmo contrato de eventos de socket e DTOs nas duas pontas.
+
 ### Professor demo (após o seed)
 
 - E-mail: `professor@koinonia.dev`
@@ -123,6 +154,68 @@ altere o `provider` em `backend/prisma/schema.prisma` para `postgresql`, aponte
 ```bash
 docker compose up -d   # sobe um PostgreSQL 16 local
 ```
+
+## Deploy
+
+### Com Docker (recomendado) — `docker-compose.prod.yml`
+
+Sobe PostgreSQL + backend + frontend (nginx) atrás do **Caddy** (HTTPS automático).
+
+```bash
+# 1. Gere um segredo forte para o JWT
+export JWT_SECRET=$(openssl rand -hex 32)
+
+# 2. (opcional) valide ambiente + conexão antes de subir
+#    npm run deploy:check   # com DATABASE_URL/JWT_SECRET no ambiente
+
+# 3. Suba tudo
+docker compose -f docker-compose.prod.yml up --build
+```
+
+Acesse **https://localhost** (aceite o aviso do CA local do Caddy em dev; em um
+domínio real o Caddy emite certificado Let's Encrypt automaticamente — basta
+trocar `localhost` pelo domínio no `Caddyfile`).
+
+O backend troca o provider do Prisma para **PostgreSQL** no build e aplica o
+schema com `prisma db push` ao iniciar. Variáveis aceitas pelo compose:
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `JWT_SECRET` (obrigatória),
+`CORS_ORIGIN` (padrão `https://localhost`).
+
+### Criar o primeiro professor
+
+O cadastro é aberto (`/teacher/login` → registrar), mas você pode provisionar via CLI:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend \
+  npm run create-teacher -w backend -- "Seu Nome" voce@exemplo.com senhaForte
+```
+
+### Backup e restauração do banco
+
+```bash
+# Backup
+docker compose -f docker-compose.prod.yml exec postgres \
+  pg_dump -U koinonia koinonia > backup.sql
+
+# Restauração
+cat backup.sql | docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U koinonia -d koinonia
+```
+
+### Sem Docker (alternativa gerenciada)
+
+- **Frontend** (Vercel/Netlify): build `npm run build -w frontend`, publique
+  `frontend/dist`. Configure `VITE_API_URL` e `VITE_WS_URL` apontando para o
+  backend público (ou use um proxy/reescrita para caminhos same-origin).
+- **Backend** (Railway/Render — com WebSocket habilitado): comando de start
+  `node dist/server.js` após `npm run build -w backend`. Defina `DATABASE_URL`,
+  `JWT_SECRET`, `PORT`, `CORS_ORIGIN`. Rode `prisma db push` (ou `migrate deploy`)
+  no deploy.
+- **Banco** (Neon/Supabase Postgres): use a `DATABASE_URL` fornecida; o provider
+  do Prisma deve ser `postgresql`.
+
+`npm run deploy:check` valida as variáveis de ambiente e a conexão ao banco
+antes de publicar.
 
 ## Progresso
 

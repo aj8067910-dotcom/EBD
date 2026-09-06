@@ -1,0 +1,11 @@
+# Caddy provides automatic HTTPS. For `localhost` it uses Caddy's local CA
+# (self-signed) — run `caddy trust` or accept the browser warning in dev.
+# For a real domain, replace `localhost` with it (e.g. koinonia.exemplo.com)
+# and Caddy will obtain a Let's Encrypt certificate automatically.
+localhost {
+	encode gzip zstd
+	# Reverse-proxy everything to the frontend (nginx), which serves the SPA
+	# and proxies /api and /socket.io to the backend. WebSocket upgrades are
+	# handled by Caddy automatically.
+	reverse_proxy frontend:80
+}

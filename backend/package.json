@@ -16,7 +16,9 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:reset": "prisma migrate reset --force",
     "simulate": "tsx scripts/simulate-students.ts",
-    "e2e:serve": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && tsx src/server.ts"
+    "e2e:serve": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && tsx src/server.ts",
+    "deploy:check": "tsx scripts/deploy-check.ts",
+    "create-teacher": "tsx scripts/create-teacher.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

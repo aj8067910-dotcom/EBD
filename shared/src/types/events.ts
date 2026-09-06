@@ -135,6 +135,8 @@ export interface ClientToServerEvents {
     ack?: AckCallback<{ participantId: string; state: RoomStateView }>,
   ) => void;
   'room:leave': (payload: { code: string }) => void;
+  // Projector mode: join a room as a passive viewer (no participant created).
+  'screen:join': (payload: { code: string }) => void;
   'moment:answer': (
     payload: { momentId: string; answer: SubmitAnswerDTO },
     // `isCorrect` is returned only to the answering student (never broadcast).

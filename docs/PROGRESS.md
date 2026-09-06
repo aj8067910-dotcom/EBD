@@ -52,8 +52,17 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] Testes RTL (reorderIds, MomentForm, ControlColumn avanço de fase) — 8 novos
 - [x] **Critérios de aceite:** editor add/reorder e painel de fase testados; ciclo Peer Instruction com dois gráficos (ResultsPreview)
 
-## PARTE 6–8 — Projetor, qualidade, deploy
+## PARTE 6 — Modo Projetor (`/screen/:code`) + pré-aula ✅
 
-- [ ] PARTE 6 — Modo Projetor (`/screen/:code`) + formulário de pré-aula
+- [x] `screen:join` público (espectador passivo, sem virar participante)
+- [x] Tela pública dark: código + QR, participantes, timer, placar; atalho F fullscreen
+- [x] Renderers por tipo (Poll, PeerInstruction com fases, WordCloud, Open/Reflection, Quiz+pódio, VerseHighlight heatmap, Wall, Timer)
+- [x] Transições com framer-motion; reconexão automática do socket
+- [x] `scripts/simulate-students.ts` (N sockets aleatórios)
+- [x] Formulário de pré-aula (`/preclass/:token`)
+- [x] **Critérios de aceite:** projetor reflete a fase em ~8 ms (< 500 ms, verificado); nenhum dado individual sem aprovação (distribuição oculta em VOTE_1/2)
+
+## PARTE 7–8 — Qualidade, deploy
+
 - [ ] PARTE 7 — Qualidade, segurança e experiência
 - [ ] PARTE 8 — Deploy

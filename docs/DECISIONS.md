@@ -143,3 +143,27 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   ~103 kB gzip (meta da PARTE 7).
 - **Testes**: `reorderIds`, `MomentForm` (draft válido + erro de validação) e
   `ControlColumn` (avanço de fase + alerta REEXPLAIN) — 8 testes novos.
+
+## PARTE 6 — Frontend: modo projetor (`/screen/:code`) e pré-aula
+
+- **Evento `screen:join`** (público) no contrato: o projetor entra na sala
+  Socket.IO como **espectador passivo** — sem criar `Participant` (contagem de
+  alunos permanece correta) — e recebe `room:state`/`moment:updated`/results/
+  timer/scores/wall. Verificado end-to-end: fase refletida em ~8 ms (< 500 ms).
+- **`connectScreen(code)`** no cliente: socket sem auth, re-emite `screen:join`
+  no `connect` (reconexão automática sem recarregar).
+- **Tema escuro** aplicado via classe `.dark` no `<html>` só na rota do projetor;
+  atalho `F` para fullscreen; transições entre momentos/fases com
+  `framer-motion` (`AnimatePresence` chaveado por `momentId:phase`).
+- **Renderers por tipo** em `moments/screen/`: barras animadas (Poll), Peer
+  Instruction que **esconde a distribuição** em VOTE_1/VOTE_2 (só contagem) e
+  mostra dois gráficos + ganho em REVEALED, nuvem de palavras, cards aprovados
+  (Open/Reflection), quiz com pódio, heatmap do versículo, mural e cronômetro.
+- **Privacidade**: nenhum dado individual aparece sem aprovação — cards de
+  abertos chegam já filtrados (aprovados) do servidor; a distribuição de votos
+  não é exibida antes de revelar (teste em `PeerInstructionScreen.test.tsx`).
+- **`scripts/simulate-students.ts`** (`npm run simulate -w backend <CÓDIGO> [n]`):
+  conecta N sockets que respondem aleatoriamente, para exercitar o projetor.
+- **Formulário de pré-aula** (`/preclass/:token?lesson=…`): busca os momentos de
+  pré-aula por token e envia respostas via REST (JiTT).
+- **Code splitting**: `Screen` (framer-motion) e `PreClass` em chunks lazy.

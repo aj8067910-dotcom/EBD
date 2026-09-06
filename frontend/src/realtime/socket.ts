@@ -53,6 +53,23 @@ export function connectHost(token: string, code: string): RoomSocket {
   return socket;
 }
 
+/** Connect as a passive projector viewer (no participant, auto re-join). */
+export function connectScreen(code: string): RoomSocket {
+  disconnectSocket();
+  const s = io(`${WS_URL}/room`, {
+    autoConnect: true,
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 5000,
+  }) as RoomSocket;
+  socket = s;
+  bindStore(s);
+  const join = () => s.emit('screen:join', { code });
+  s.on('connect', join);
+  return s;
+}
+
 export function disconnectSocket() {
   if (socket) {
     socket.disconnect();

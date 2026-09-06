@@ -124,6 +124,22 @@ export function attachRealtime(app: FastifyInstance): {
       manager.markOffline(socket.id);
     });
 
+    // Projector: passive viewer, joins the broadcast room without a participant.
+    socket.on('screen:join', async ({ code }) => {
+      try {
+        const room = await manager.getOrLoad(code.toUpperCase());
+        if (!room) throw new AppError('NOT_FOUND', 'Sala não encontrada', 404);
+        socket.data.roomCode = room.code;
+        await socket.join(room.code);
+        socket.emit('room:state', manager.stateView(room));
+        manager.emitParticipants(room);
+        await manager.emitWall(room);
+        if (room.activeMomentId) await manager.emitResults(room);
+      } catch (error) {
+        emitError(socket, error);
+      }
+    });
+
     socket.on('moment:answer', async ({ momentId, answer }, ack) => {
       try {
         const parsed = submitAnswerSchema.parse(answer);

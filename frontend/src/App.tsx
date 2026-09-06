@@ -23,6 +23,12 @@ const LivePanel = lazy(() =>
 const Report = lazy(() =>
   import('./pages/teacher/Report.js').then((m) => ({ default: m.Report })),
 );
+const Screen = lazy(() =>
+  import('./pages/Screen.js').then((m) => ({ default: m.Screen })),
+);
+const PreClass = lazy(() =>
+  import('./pages/PreClass.js').then((m) => ({ default: m.PreClass })),
+);
 
 function Loading() {
   return <div className="p-8 text-center text-muted">Carregando…</div>;
@@ -49,14 +55,8 @@ export function App() {
           <Route path="/teacher/rooms/:id/report" element={<Report />} />
         </Route>
 
-        <Route
-          path="/screen/:code"
-          element={<Placeholder title="Modo Projetor" part="PARTE 6" />}
-        />
-        <Route
-          path="/preclass/:token"
-          element={<Placeholder title="Pré-aula" part="PARTE 6" />}
-        />
+        <Route path="/screen/:code" element={<Screen />} />
+        <Route path="/preclass/:token" element={<PreClass />} />
 
         <Route path="*" element={<Placeholder title="Página não encontrada" />} />
       </Routes>

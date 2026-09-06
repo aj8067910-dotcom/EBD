@@ -47,6 +47,7 @@ export interface RoomRuntime {
   teacherId: string;
   lessonTitle: string;
   status: 'WAITING' | 'LIVE' | 'ENDED';
+  createdAt: number;
   moments: Map<string, MomentRuntime>;
   momentOrder: string[];
   participants: Map<string, ParticipantRuntime>;

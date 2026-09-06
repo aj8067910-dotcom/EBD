@@ -10,6 +10,7 @@ import {
 } from '@koinonia/shared';
 import { corsOrigins } from '../env.js';
 import { AppError } from '../errors.js';
+import { allow } from './rateLimit.js';
 import { RoomStateManager } from './roomState.js';
 import type { TeacherTokenPayload } from '../plugins/auth.js';
 
@@ -97,6 +98,10 @@ export function attachRealtime(app: FastifyInstance): {
   function registerStudentHandlers(socket: AppSocket) {
     socket.on('room:join', async (payload, ack) => {
       try {
+        const ip = socket.handshake.address || socket.id;
+        if (!allow(`join:${ip}`, 10, 60_000)) {
+          throw new AppError('RATE_LIMITED', 'Muitas tentativas. Aguarde um instante.', 429);
+        }
         const { code, nickname } = joinRoomSchema.parse(payload);
         const { room, participant } = await manager.join(code, nickname, socket.id);
         socket.data.role = 'participant';
@@ -162,6 +167,10 @@ export function attachRealtime(app: FastifyInstance): {
 
     socket.on('wall:post', async ({ text }, ack) => {
       try {
+        const key = `wall:${socket.data.participantId ?? socket.id}`;
+        if (!allow(key, 5, 10_000)) {
+          throw new AppError('RATE_LIMITED', 'Aguarde antes de enviar outra dúvida.', 429);
+        }
         const room = await requireRoom(socket);
         const item = await manager.postWall(
           room,

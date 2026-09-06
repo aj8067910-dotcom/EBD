@@ -6,6 +6,8 @@ import {
   useLessons,
 } from '../../api/teacherHooks.js';
 import { Button, Card, EmptyState, useToast } from '../../ui/index.js';
+import { loadLastRoom, saveLastRoom } from '../../lib/session.js';
+import { TeacherTour } from '../../components/TeacherTour.js';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ export function Dashboard() {
   const createRoom = useCreateRoom();
 
   const lessons = data?.lessons ?? [];
+  const lastRoom = loadLastRoom();
 
   const newLesson = async () => {
     const lesson = await createLesson.mutateAsync({
@@ -28,6 +31,7 @@ export function Dashboard() {
   const start = async (lessonId: string) => {
     try {
       const { room } = await createRoom.mutateAsync(lessonId);
+      saveLastRoom(room.code);
       navigate(`/teacher/live/${room.code}`);
     } catch {
       toast('Não foi possível iniciar a aula', 'error');
@@ -36,11 +40,22 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
+      <TeacherTour />
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink">Minhas lições</h1>
-        <Button onClick={newLesson} disabled={createLesson.isPending}>
-          + Nova lição
-        </Button>
+        <div className="flex gap-2">
+          {lastRoom && (
+            <Button
+              variant="secondary"
+              onClick={() => navigate(`/teacher/live/${lastRoom}`)}
+            >
+              Reabrir última aula
+            </Button>
+          )}
+          <Button onClick={newLesson} disabled={createLesson.isPending}>
+            + Nova lição
+          </Button>
+        </div>
       </header>
 
       {isLoading ? (

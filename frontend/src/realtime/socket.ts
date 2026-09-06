@@ -125,12 +125,28 @@ export function joinRoom(
   });
 }
 
-/** Submit an answer for the active moment. */
+// Offline-tolerant answer queue: if the network drops mid-answer, we queue it
+// and resend on reconnect. Resends are idempotent server-side (@@unique on
+// momentId+participantId+phase), so duplicates simply upsert.
+const answerQueue: { momentId: string; answer: unknown }[] = [];
+
+function flushAnswerQueue(s: RoomSocket) {
+  while (answerQueue.length > 0) {
+    const item = answerQueue.shift();
+    if (item) s.emit('moment:answer', { momentId: item.momentId, answer: item.answer as never });
+  }
+}
+
+/** Submit an answer for the active moment (queued while offline). */
 export function submitAnswer(
   s: RoomSocket,
   momentId: string,
   answer: unknown,
 ): Promise<Ack<{ accepted: boolean; isCorrect?: boolean | null }>> {
+  if (!s.connected) {
+    answerQueue.push({ momentId, answer });
+    return Promise.resolve({ ok: true, data: { accepted: true } });
+  }
   return new Promise((resolve) => {
     // The answer union is validated server-side; cast at the boundary.
     s.emit(
@@ -154,7 +170,10 @@ export function upvoteWall(s: RoomSocket, id: string) {
 function bindStore(s: RoomSocket) {
   const store = useRoomStore.getState;
 
-  s.on('connect', () => store().setConnected(true));
+  s.on('connect', () => {
+    store().setConnected(true);
+    flushAnswerQueue(s);
+  });
   s.on('disconnect', () => store().setConnected(false));
 
   s.on('room:state', (state) => store().applyRoomState(state));

@@ -4,6 +4,7 @@ import { lessonRepo } from '../repositories/lessonRepo.js';
 import { prisma } from '../prisma.js';
 import { toMomentDTO } from '../lib/moment.js';
 import { generateRoomCode } from '../lib/roomCode.js';
+import { isRoomExpired } from '../lib/constants.js';
 import { Errors } from '../errors.js';
 
 export const roomService = {
@@ -70,9 +71,11 @@ export const roomService = {
     if (!room) {
       return { exists: false, status: null, lessonTitle: null, teamsEnabled: false };
     }
+    const expired = isRoomExpired(room.createdAt, room.status);
     return {
       exists: true,
-      status: room.status as PublicRoomInfo['status'],
+      // An expired room is presented as ended so the join screen blocks entry.
+      status: expired ? 'ENDED' : (room.status as PublicRoomInfo['status']),
       lessonTitle: room.lesson.title,
       teamsEnabled: room.teams.length > 0,
     };

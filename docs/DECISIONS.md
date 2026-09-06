@@ -167,3 +167,31 @@ Registro cronológico das decisões de arquitetura e ferramentas.
 - **Formulário de pré-aula** (`/preclass/:token?lesson=…`): busca os momentos de
   pré-aula por token e envia respostas via REST (JiTT).
 - **Code splitting**: `Screen` (framer-motion) e `PreClass` em chunks lazy.
+
+## PARTE 7 — Qualidade, segurança e experiência
+
+- **Segurança**: `@fastify/helmet` (cabeçalhos), CORS restrito por `CORS_ORIGIN`,
+  rate-limit HTTP no login (10/min) + rate-limit **de socket** (`room:join`
+  10/min por IP, `wall:post` 5/10s por participante), sanitização de texto,
+  **expiração de código de sala em 6h** (`isRoomExpired`), JWT 7 dias.
+- **Upgrade de segurança de dependências**: Fastify 4 → **5** e `@fastify/jwt`
+  → **10** (fast-jwt 6.3.3), eliminando os CVEs high/critical em
+  fastify/find-my-way/fast-jwt. `npm audit --omit=dev` fica **sem high/critical**
+  (restam 2 moderate do react-router, não aplicáveis a esta SPA). Os
+  high/critical restantes do `npm audit` completo são **apenas de tooling de
+  dev** (vite/vitest, exigem major bump) — rastreados em `docs/ROADMAP.md`.
+- **Resiliência**: reconexão exponencial do socket (client), banner
+  "Reconectando…", **re-join automático** no `connect`, e **"Reabrir última
+  aula"** (professor) via `localStorage`.
+- **Offline-tolerante**: respostas do aluno entram em **fila** quando offline e
+  são reenviadas no `connect` — idempotentes pelo `@@unique(momentId,
+  participantId, phase)`.
+- **PWA**: `manifest.webmanifest` + `sw.js` (network-first para navegação,
+  cache-first para assets, nunca cacheia `/socket.io`) + registro em produção.
+- **Onboarding**: `TeacherTour` próprio (4 passos, flag em `localStorage`).
+- **E2E Playwright**: cenário "aula completa" (professor + 2 alunos + projetor)
+  dirigindo login → iniciar aula → entrar → word cloud → projetor reflete;
+  `webServer` sobe backend (SQLite e2e + seed) e o front (preview). Em CI o
+  navegador vem de `playwright install`; local usa `PW_CHROMIUM_PATH`.
+- **CI**: `.github/workflows/ci.yml` roda lint + build + unit/integração + e2e.
+- **Docs**: `docs/GUIA-DO-PROFESSOR.md`.

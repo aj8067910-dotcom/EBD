@@ -15,6 +15,14 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   registerErrorHandler(app);
 
+  const helmet = await import('@fastify/helmet');
+  await app.register(helmet.default, {
+    // The backend serves a JSON API + Socket.IO, not HTML, so CSP is unneeded
+    // and would only complicate the separate frontend origin.
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  });
+
   const cors = await import('@fastify/cors');
   await app.register(cors.default, {
     origin: corsOrigins,

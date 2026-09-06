@@ -30,3 +30,22 @@ export function clearSession() {
     // ignore
   }
 }
+
+const LAST_ROOM_KEY = 'koinonia_last_room';
+
+/** Remember the last room a teacher started (to "reopen last class"). */
+export function saveLastRoom(code: string) {
+  try {
+    localStorage.setItem(LAST_ROOM_KEY, code);
+  } catch {
+    // ignore
+  }
+}
+
+export function loadLastRoom(): string | null {
+  try {
+    return localStorage.getItem(LAST_ROOM_KEY);
+  } catch {
+    return null;
+  }
+}

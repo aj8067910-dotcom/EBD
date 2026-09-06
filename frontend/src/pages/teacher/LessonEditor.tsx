@@ -16,6 +16,7 @@ import { PreClassLink } from '../../components/PreClassLink.js';
 import { Modal } from '../../components/Modal.js';
 import { MomentForm } from '../../moments/teacher/MomentForm.js';
 import { LESSON_TEMPLATES, type MomentDraft } from '../../templates/lessonTemplates.js';
+import { saveLastRoom } from '../../lib/session.js';
 import type { MomentDTO } from '../../api/types.js';
 
 export function LessonEditor() {
@@ -63,6 +64,7 @@ export function LessonEditor() {
 
   const start = async () => {
     const { room } = await createRoom.mutateAsync(id);
+    saveLastRoom(room.code);
     navigate(`/teacher/live/${room.code}`);
   };
 

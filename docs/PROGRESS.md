@@ -62,7 +62,18 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] Formulário de pré-aula (`/preclass/:token`)
 - [x] **Critérios de aceite:** projetor reflete a fase em ~8 ms (< 500 ms, verificado); nenhum dado individual sem aprovação (distribuição oculta em VOTE_1/2)
 
-## PARTE 7–8 — Qualidade, deploy
+## PARTE 7 — Qualidade, segurança e experiência ✅
 
-- [ ] PARTE 7 — Qualidade, segurança e experiência
-- [ ] PARTE 8 — Deploy
+- [x] E2E Playwright (aula completa: professor + 2 alunos + projetor) + CI (`.github/workflows/ci.yml`: lint, unit, e2e)
+- [x] Segurança: Helmet, CORS restrito, rate-limit socket (`room:join`, `wall:post`), sanitização, código expira 6h, JWT 7d
+- [x] Upgrade Fastify 5 + @fastify/jwt 10 → produção sem vulnerabilidades high/critical (`npm audit --omit=dev`)
+- [x] Resiliência: reconexão + banner, re-join automático, "Reabrir última aula"
+- [x] Offline-tolerante: fila de respostas reenviada ao reconectar (idempotente)
+- [x] PWA: manifest + service worker + registro
+- [x] Onboarding: tour de 4 passos (próprio)
+- [x] Docs: `docs/GUIA-DO-PROFESSOR.md`
+- [x] **Critérios de aceite:** bundle do aluno < 200 kB gzip (~103); prod sem high/critical (dev-tooling vite/vitest rastreado em ROADMAP)
+
+## PARTE 8 — Deploy
+
+- [ ] PARTE 8 — Deploy (Docker multi-stage, compose prod, Caddy, deploy:check)

@@ -10,6 +10,7 @@ import {
 } from '@koinonia/shared';
 import { prisma } from '../prisma.js';
 import { AppError, Errors } from '../errors.js';
+import { isRoomExpired } from '../lib/constants.js';
 import { computeResults } from './results.js';
 import {
   quizPhase,
@@ -111,6 +112,7 @@ export class RoomStateManager {
       teacherId: room.teacherId,
       lessonTitle: room.lesson.title,
       status: room.status as RoomRuntime['status'],
+      createdAt: room.createdAt.getTime(),
       moments,
       momentOrder: room.lesson.moments.map((m) => m.id),
       participants,
@@ -290,6 +292,9 @@ export class RoomStateManager {
     const room = await this.getOrLoad(code);
     if (!room) throw Errors.notFound('Sala não encontrada');
     if (room.status === 'ENDED') throw Errors.forbidden('Esta aula já foi encerrada');
+    if (isRoomExpired(room.createdAt, room.status)) {
+      throw Errors.forbidden('Esta sala expirou (validade de 6 horas)');
+    }
 
     const nickname = rawNickname.trim().slice(0, 20);
 

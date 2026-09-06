@@ -124,13 +124,13 @@ export function attachRealtime(app: FastifyInstance): {
         const parsed = submitAnswerSchema.parse(answer);
         const room = await requireRoom(socket);
         if (!socket.data.participantId) throw new AppError('UNAUTHORIZED', 'Entre na sala primeiro', 401);
-        await manager.submitAnswer(
+        const { isCorrect } = await manager.submitAnswer(
           room,
           socket.data.participantId,
           momentId,
           parsed as unknown as Record<string, unknown>,
         );
-        ack?.({ ok: true, data: { accepted: true } });
+        ack?.({ ok: true, data: { accepted: true, isCorrect } });
       } catch (error) {
         emitError(socket, error);
         if (error instanceof AppError) {

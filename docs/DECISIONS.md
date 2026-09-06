@@ -87,3 +87,30 @@ Registro cronológico das decisões de arquitetura e ferramentas.
 - **Agregadores puros** em `realtime/aggregators/` com testes unitários; testes
   de integração com 2 sockets cobrem o ciclo de PEER_INSTRUCTION, o QUIZ_TEAM e
   a reconexão do aluno.
+
+## PARTE 4 — Frontend: base, design system e entrada do aluno
+
+- **Tailwind com tokens em CSS variables** (`:root` claro + `.dark` para o
+  projetor). Cores mapeadas no `tailwind.config.js` via `var(--…)` (brand
+  índigo, accent dourado). Foco visível AA global e `prefers-reduced-motion`.
+- **Design system** em `src/ui/` (`Button`, `Card`, `Input`, `OptionButton`
+  ≥56px com letra A/B/C/D e barra de cor da equipe, `ProgressDots`, `Badge`,
+  `Timer` com anel SVG, `ToastProvider`/`useToast`, `EmptyState`), com
+  `aria-live`/`aria-pressed`/labels.
+- **Camada de dados**: `api/client.ts` (fetch com `ApiError` padronizado e token
+  em `localStorage`), `api/hooks.ts` (TanStack Query — `usePublicRoom`),
+  `realtime/socket.ts` (singleton tipado com os contratos do `shared`,
+  reconexão automática) e store Zustand `useRoomStore` atualizado **apenas** por
+  eventos de socket.
+- **Feedback individual do quiz**: o ack de `moment:answer` passou a devolver
+  `isCorrect` **somente ao aluno que respondeu** (o `correctId` nunca é
+  transmitido), permitindo o feedback certo/errado sem enviesar os demais.
+- **Fluxo do aluno**: `/join/:code?` (código auto-uppercase filtrado pelo
+  alfabeto do `shared`, validado via `/rooms/:code/public`, apelido 2–20,
+  persistência em `sessionStorage`), `/room/:code` com `MomentRenderer` (switch
+  por tipo), estado de espera, banner “Reconectando…”, re-join automático no
+  evento `connect`, e `WallPanel` flutuante sempre visível.
+- **Componentes de resposta** por tipo em `src/moments/student/`; rotas de
+  professor/projetor ficam como `Placeholder` até as PARTES 5–6.
+- **Testes RTL**: `OptionButton`, fases do `PeerInstructionAnswer`, validação do
+  `Join` (fetch mockado) e roteamento da landing — 12 testes.

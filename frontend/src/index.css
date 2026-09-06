@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * Design tokens. Light palette by default; the projector mode (`/screen`)
+ * adds the `.dark` class on <html> for a high-contrast dark theme.
+ * ------------------------------------------------------------------------ */
+:root {
+  --brand: #4f46e5; /* deep indigo */
+  --brand-strong: #4338ca;
+  --brand-soft: #eef2ff;
+  --accent: #c99a3f; /* soft gold */
+  --accent-soft: #fdf6e7;
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --ok: #059669;
+  --danger: #e11d48;
+}
+
+.dark {
+  --brand: #818cf8;
+  --brand-strong: #a5b4fc;
+  --brand-soft: #1e223b;
+  --accent: #e6c15c;
+  --accent-soft: #2a2410;
+  --bg: #0b1020;
+  --surface: #131a2e;
+  --ink: #f1f5f9;
+  --muted: #94a3b8;
+  --line: #263048;
+  --ok: #34d399;
+  --danger: #fb7185;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family:
+    Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Always-visible, high-contrast focus ring for accessibility (AA). */
+:where(a, button, input, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

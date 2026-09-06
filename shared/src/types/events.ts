@@ -137,7 +137,8 @@ export interface ClientToServerEvents {
   'room:leave': (payload: { code: string }) => void;
   'moment:answer': (
     payload: { momentId: string; answer: SubmitAnswerDTO },
-    ack?: AckCallback<{ accepted: boolean }>,
+    // `isCorrect` is returned only to the answering student (never broadcast).
+    ack?: AckCallback<{ accepted: boolean; isCorrect?: boolean | null }>,
   ) => void;
   'wall:post': (payload: { text: string }, ack?: AckCallback<WallItem>) => void;
   'wall:upvote': (payload: { id: string }) => void;

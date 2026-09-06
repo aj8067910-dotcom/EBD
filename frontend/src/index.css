@@ -3,37 +3,40 @@
 @tailwind utilities;
 
 /* ---------------------------------------------------------------------------
- * Design tokens. Light palette by default; the projector mode (`/screen`)
- * adds the `.dark` class on <html> for a high-contrast dark theme.
+ * El Shaday — design tokens.
+ * Light palette by default (≈60% off-white/white, 30% red, 10% coral accent);
+ * the projector mode (`/screen`) adds `.dark` on <html> for a graphite theme.
  * ------------------------------------------------------------------------ */
 :root {
-  --brand: #4f46e5; /* deep indigo */
-  --brand-strong: #4338ca;
-  --brand-soft: #eef2ff;
-  --accent: #c99a3f; /* soft gold */
-  --accent-soft: #fdf6e7;
-  --bg: #f6f7fb;
+  --brand: #d91f1f; /* Vermelho Shaday */
+  --brand-strong: #8c0f14; /* Vermelho Profundo */
+  --brand-soft: #fbe6e6; /* light red tint (chips, hover) */
+  --accent: #ff5a47; /* Coral Neon (CTAs, gradientes) */
+  --accent-soft: #ffe8e3;
+  --bg: #f7f2ec; /* Off-White Quente */
   --surface: #ffffff;
-  --ink: #0f172a;
-  --muted: #64748b;
-  --line: #e2e8f0;
-  --ok: #059669;
-  --danger: #e11d48;
+  --ink: #111111; /* Preto Grafite */
+  --muted: #6f665c; /* warm gray on sand */
+  --line: #e4d9c8; /* Areia */
+  --ok: #1f9d55;
+  --danger: #8c0f14; /* Vermelho Profundo */
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque',
+    'Archivo', Inter, system-ui, sans-serif;
 }
 
 .dark {
-  --brand: #818cf8;
-  --brand-strong: #a5b4fc;
-  --brand-soft: #1e223b;
-  --accent: #e6c15c;
-  --accent-soft: #2a2410;
-  --bg: #0b1020;
-  --surface: #131a2e;
-  --ink: #f1f5f9;
-  --muted: #94a3b8;
-  --line: #263048;
+  --brand: #ff5a47; /* coral pops on graphite */
+  --brand-strong: #d91f1f;
+  --brand-soft: #2a1414;
+  --accent: #ff5a47;
+  --accent-soft: #2a1410;
+  --bg: #111111; /* Preto Grafite */
+  --surface: #1b1614;
+  --ink: #f7f2ec; /* Off-White Quente */
+  --muted: #b8ada0;
+  --line: #3a322c;
   --ok: #34d399;
-  --danger: #fb7185;
+  --danger: #ff5a47;
 }
 
 html,
@@ -45,9 +48,18 @@ body,
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family:
-    Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Titles follow the logo lettering: display face, tight tracking, compressed. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.02;
 }
 
 /* Always-visible, high-contrast focus ring for accessibility (AA). */
@@ -55,6 +67,17 @@ body {
   outline: 3px solid var(--brand);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+/* "Sticker" capsule — turns a word into a rounded outlined badge. */
+.capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  padding: 0.25rem 0.9rem;
+  box-shadow: 0 2px 0 rgba(17, 17, 17, 0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {

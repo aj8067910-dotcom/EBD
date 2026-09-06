@@ -8,3 +8,5 @@ export { Badge } from './Badge.js';
 export { Timer } from './Timer.js';
 export { ToastProvider, useToast } from './Toast.js';
 export { EmptyState } from './EmptyState.js';
+export { Star, StarCluster } from './Star.js';
+export { Halftone } from './Halftone.js';

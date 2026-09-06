@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { useRoomStore } from '../store/useRoomStore.js';
 import { connectScreen, disconnectSocket } from '../realtime/socket.js';
-import { Timer } from '../ui/index.js';
+import { Halftone, StarCluster, Timer } from '../ui/index.js';
 import { ScreenRenderer } from '../moments/screen/ScreenRenderer.js';
 
 export function Screen() {
@@ -44,7 +44,8 @@ export function Screen() {
   const showTimer = !!timer?.running;
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-ink">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-bg text-ink">
+      <Halftone from="top-right" color="var(--brand)" opacity={0.14} />
       {/* Top bar: room code + QR + participants + scoreboard */}
       <header className="flex items-center justify-between gap-6 p-6">
         <div className="flex items-center gap-4">
@@ -112,8 +113,12 @@ export function Screen() {
               />
             ) : (
               <div className="text-center">
-                <h1 className="text-6xl font-black text-ink">
-                  {roomState?.lessonTitle ?? 'Koinonia Class'}
+                <StarCluster className="mb-4 justify-center" />
+                <p className="text-2xl font-semibold uppercase tracking-[0.3em] text-brand">
+                  El Shaday
+                </p>
+                <h1 className="mt-2 text-6xl font-black uppercase text-ink">
+                  {roomState?.lessonTitle ?? 'Escola Bíblica Dominical'}
                 </h1>
                 <p className="mt-6 text-3xl text-muted">
                   Entre em {window.location.host}/join com o código{' '}

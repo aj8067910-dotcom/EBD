@@ -22,7 +22,7 @@ describe('App routing', () => {
   it('renders the landing page at /', () => {
     renderAt('/');
     expect(
-      screen.getByRole('heading', { name: /koinonia class/i }),
+      screen.getByRole('heading', { name: /el shaday/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /entrar com código/i }),

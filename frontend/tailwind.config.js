@@ -24,11 +24,20 @@ export default {
       },
       fontFamily: {
         sans: [
+          'Inter Variable',
           'Inter',
           'system-ui',
           '-apple-system',
           'Segoe UI',
           'Roboto',
+          'sans-serif',
+        ],
+        display: [
+          'Bricolage Grotesque Variable',
+          'Bricolage Grotesque',
+          'Archivo',
+          'Inter',
+          'system-ui',
           'sans-serif',
         ],
       },

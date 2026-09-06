@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App.js';
 import { ToastProvider } from './ui/index.js';
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/inter';
 import './index.css';
 
 const queryClient = new QueryClient();

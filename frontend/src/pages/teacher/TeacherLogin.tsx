@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Input, useToast } from '../../ui/index.js';
+import { Button, Card, Halftone, Input, StarCluster, useToast } from '../../ui/index.js';
 import { useLogin } from '../../api/teacherHooks.js';
 import { ApiError } from '../../api/client.js';
 
@@ -25,9 +25,16 @@ export function TeacherLogin() {
   };
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col justify-center gap-5 p-6">
-      <header className="text-center">
-        <h1 className="text-2xl font-bold text-ink">Painel do Professor</h1>
+    <div className="relative mx-auto flex min-h-full max-w-md flex-col justify-center gap-5 overflow-hidden p-6">
+      <Halftone from="top-right" opacity={0.14} />
+      <header className="relative text-center">
+        <StarCluster className="mb-2 justify-center" />
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand">
+          El Shaday
+        </p>
+        <h1 className="mt-1 text-3xl font-extrabold uppercase text-ink">
+          Painel do Professor
+        </h1>
         <p className="mt-1 text-muted">Entre para montar e conduzir a aula.</p>
       </header>
       <Card>

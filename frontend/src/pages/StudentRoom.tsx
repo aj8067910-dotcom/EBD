@@ -72,6 +72,9 @@ export function StudentRoom() {
     <div className="mx-auto flex min-h-full max-w-md flex-col p-4 pb-24">
       <header className="mb-4 flex items-center justify-between gap-2">
         <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">
+            El Shaday
+          </p>
           <p className="truncate text-sm text-muted">
             {roomState?.lessonTitle ?? 'Carregando…'}
           </p>

@@ -56,3 +56,34 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   `DATABASE_URL`), execução sequencial (`fileParallelism: false`).
 - **Relatório** consolidado (JSON e CSV) montado a partir das tabelas; % de
   acerto antes/depois em PEER_INSTRUCTION calculado das fases `OPEN`/`REOPEN`.
+
+## PARTE 3 — Backend: tempo real (Socket.IO) e motor de momentos
+
+- **Socket.IO acoplado ao servidor HTTP do Fastify** (`attachRealtime`) no
+  namespace `/room`. Chamado em `server.ts` (não em `buildApp`), para que os
+  testes HTTP com Supertest fiquem isolados do WebSocket e os testes de tempo
+  real anexem explicitamente.
+- **Autenticação**: host via JWT no handshake (`auth.token` + `auth.code`,
+  validado com `app.jwt.verify`, checando `room.teacherId`); aluno entra por
+  `room:join { code, nickname }` sem token.
+- **`RoomStateManager`**: estado autoritativo em memória (`Map<code, RoomRuntime>`),
+  reconstruído do banco em `getOrLoad` (sobrevive a restart). Respostas são
+  **write-through** (persistidas imediatamente com upsert em
+  `@@unique(momentId, participantId, phase)`), então a reconexão pelo mesmo
+  apelido (janela de 30 min) recupera as respostas sem estado extra.
+- **Fases de resposta do quiz** codificadas como `Q:<questionId>` para respeitar
+  o unique por fase com múltiplas perguntas no mesmo momento.
+- **Máquina de estados por tipo** em `advancePhase`: PEER_INSTRUCTION
+  `OPEN→DISCUSS(timer 150s)→REOPEN→REVEALED` (com `suggestion: 'REEXPLAIN'` se
+  acerto inicial < 30%); QUIZ_TEAM avança questão a questão com timer e placar
+  por equipe (bônus de velocidade linear até +50%, calculado no servidor);
+  demais tipos `OPEN→CLOSED→REVEALED` (ou `OPEN→CLOSED` para aberto/reflexão).
+- **Só agregados aos alunos**: `computeResults` lê o banco e devolve apenas
+  contagens/nuvem/heatmap/cards aprovados; o `correctId` do quiz nunca vai ao
+  cliente (`publicConfig` expõe só a questão atual sem gabarito).
+- **Robustez**: todo handler em try/catch emitindo `error` apenas ao remetente;
+  limite de 200 participantes; sanitização de texto (`stripHtml` + limite);
+  broadcasts de resultados com throttle de 200 ms (≤ 5/s por sala).
+- **Agregadores puros** em `realtime/aggregators/` com testes unitários; testes
+  de integração com 2 sockets cobrem o ciclo de PEER_INSTRUCTION, o QUIZ_TEAM e
+  a reconexão do aluno.

@@ -21,15 +21,16 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] Testes Supertest do fluxo completo (15 testes)
 - [x] **Critérios de aceite:** testes passam; `curl` documentado no README funciona com o seed
 
-## PARTE 3 — Backend: tempo real (Socket.IO) e motor de momentos
+## PARTE 3 — Backend: tempo real (Socket.IO) e motor de momentos ✅
 
-- [ ] `RoomStateManager` (memória + write-behind + reconstrução)
-- [ ] Fluxo do aluno (join, answer, wall)
-- [ ] Fluxo do professor (assignTeams, startMoment, advancePhase, timer, close)
-- [ ] Agregadores puros por tipo (+ testes unitários)
-- [ ] Robustez (try/catch, limites, sanitização)
-- [ ] Testes de integração (Peer Instruction + Quiz + reconexão)
+- [x] `RoomStateManager` (memória + write-through + reconstrução do banco)
+- [x] Fluxo do aluno (join com apelido único/reconexão, answer, wall post/upvote)
+- [x] Fluxo do professor (assignTeams, startMoment, advancePhase, timer, close, approveAnswer)
+- [x] Agregadores puros por tipo (+ 10 testes unitários)
+- [x] Robustez (try/catch → error ao remetente, limite 200, sanitização, throttle)
+- [x] Testes de integração (Peer Instruction + Quiz + reconexão) — 3 testes
+- [x] **Critérios de aceite:** ciclo completo de PEER_INSTRUCTION e QUIZ_TEAM verificados; reconexão recupera respostas
 
 ## PARTE 4–8 — Frontend, qualidade, deploy
 
-- [ ] Fora do escopo atual (backend funcional primeiro)
+- [ ] Fora do escopo atual (o usuário pediu "só até o backend funcional")

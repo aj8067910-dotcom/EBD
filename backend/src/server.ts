@@ -1,9 +1,11 @@
 import { buildApp } from './app.js';
+import { attachRealtime } from './realtime/index.js';
 import { env } from './env.js';
 import { prisma } from './prisma.js';
 
 async function start() {
   const app = await buildApp();
+  attachRealtime(app);
 
   const close = async () => {
     await app.close();

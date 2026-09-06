@@ -37,6 +37,7 @@
     "@types/node": "^20.14.15",
     "@types/supertest": "^6.0.2",
     "prisma": "^5.22.0",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.5.4",

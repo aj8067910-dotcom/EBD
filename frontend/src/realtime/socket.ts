@@ -38,6 +38,21 @@ export function getSocket(opts: ConnectOptions = {}): RoomSocket {
   return socket;
 }
 
+/** Connect as the host (teacher) with a JWT, auto-joining the room. */
+export function connectHost(token: string, code: string): RoomSocket {
+  disconnectSocket();
+  socket = io(`${WS_URL}/room`, {
+    autoConnect: true,
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 5000,
+    auth: { token, code },
+  }) as RoomSocket;
+  bindStore(socket);
+  return socket;
+}
+
 export function disconnectSocket() {
   if (socket) {
     socket.disconnect();
@@ -45,6 +60,31 @@ export function disconnectSocket() {
   }
   useRoomStore.getState().reset();
 }
+
+/* Host command helpers. */
+export const host = {
+  startMoment: (s: RoomSocket, momentId: string) =>
+    s.emit('host:startMoment', { momentId }),
+  advancePhase: (s: RoomSocket, momentId: string) =>
+    s.emit('host:advancePhase', { momentId }),
+  closeMoment: (s: RoomSocket, momentId: string) =>
+    s.emit('host:closeMoment', { momentId }),
+  approveAnswer: (s: RoomSocket, answerId: string, approved: boolean) =>
+    s.emit('host:approveAnswer', { answerId, approved }),
+  startTimer: (s: RoomSocket, seconds: number, label?: string) =>
+    s.emit('host:startTimer', { seconds, label }),
+  assignTeams: (
+    s: RoomSocket,
+    mode: 'random' | 'choose',
+    teamCount: number,
+    names?: string[],
+  ) => s.emit('host:assignTeams', { mode, teamCount, names }),
+  markWall: (
+    s: RoomSocket,
+    id: string,
+    patch: { answered?: boolean; displayed?: boolean },
+  ) => s.emit('host:markWall', { id, ...patch }),
+};
 
 interface Ack<T> {
   ok: boolean;

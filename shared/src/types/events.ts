@@ -157,6 +157,11 @@ export interface ClientToServerEvents {
     teamCount: number;
     names?: string[];
   }) => void;
+  'host:markWall': (payload: {
+    id: string;
+    answered?: boolean;
+    displayed?: boolean;
+  }) => void;
 }
 
 export interface ServerToClientEvents {

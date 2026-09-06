@@ -55,6 +55,8 @@ export interface RoomRuntime {
   activePhase: MomentPhase | null;
   timer: TimerRuntime | null;
   quiz: QuizRuntime | null;
+  /** Socket ids of connected hosts (teachers) — receive full moderation data. */
+  hostSocketIds: Set<string>;
 }
 
 /** Phase used to persist a quiz answer for a specific question. */

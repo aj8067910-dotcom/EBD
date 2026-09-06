@@ -114,3 +114,32 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   professor/projetor ficam como `Placeholder` até as PARTES 5–6.
 - **Testes RTL**: `OptionButton`, fases do `PeerInstructionAnswer`, validação do
   `Join` (fetch mockado) e roteamento da landing — 12 testes.
+
+## PARTE 5 — Frontend: painel do professor (editor + ao vivo)
+
+- **Adição no backend**: `GET /rooms/:code` (autenticado, dono) devolve sala +
+  lição com momentos, para o painel ao vivo carregar o roteiro ao abrir por URL.
+- **Hooks TanStack Query** (`api/teacherHooks.ts`) para auth, lições, momentos
+  (CRUD + reorder), salas e relatório; token JWT em `localStorage` (Bearer).
+- **Editor de roteiro**: cabeçalho com salvamento no `onBlur`; lista arrastável
+  com `@dnd-kit`; a lógica de reordenação foi extraída para `reorderIds` (puro e
+  testável); modal de adição com os 9 tipos do `momentCatalog`; `MomentForm` por
+  tipo validado com o **schema Zod do `shared`** (`createMomentSchema`) no
+  submit; modelos de aula em `templates/lessonTemplates.ts`; link de pré-aula
+  com QR (`qrcode.react`).
+- **Painel ao vivo**: `connectHost(token, code)` abre um socket host (JWT no
+  handshake); 3 colunas no desktop / abas no mobile; controle de fase contextual
+  por tipo; alerta REEXPLAIN; prévia de resultados com Recharts
+  (`ResultsPreview`, dois gráficos no Peer Instruction); timer rápido; encerrar
+  aula (REST) → relatório.
+- **Moderação sem vazamento**: o backend passou a rastrear sockets de host por
+  sala (`hostSocketIds`) e envia as respostas **não aprovadas** apenas aos hosts
+  (`computeResults({ includeUnapproved })`), mantendo a regra de só exibir
+  aprovadas aos alunos/projetor.
+- **Novo evento** `host:markWall` (marcar respondida / exibir no projetor),
+  adicionado ao contrato compartilhado e ao backend.
+- **Code splitting**: páginas do professor via `React.lazy` — Recharts/dnd-kit/
+  react-hook-form/qrcode saem para chunks separados; o bundle do aluno volta a
+  ~103 kB gzip (meta da PARTE 7).
+- **Testes**: `reorderIds`, `MomentForm` (draft válido + erro de validação) e
+  `ControlColumn` (avanço de fase + alerta REEXPLAIN) — 8 testes novos.

@@ -25,6 +25,11 @@ export const roomController = {
     return reply.send(await roomService.getPublic(code));
   },
 
+  async detail(request: FastifyRequest, reply: FastifyReply) {
+    const { code } = codeParams.parse(request.params);
+    return reply.send(await roomService.getForTeacher(code, teacherId(request)));
+  },
+
   async end(request: FastifyRequest, reply: FastifyReply) {
     const { code } = codeParams.parse(request.params);
     return reply.send({ room: await roomService.end(code, teacherId(request)) });

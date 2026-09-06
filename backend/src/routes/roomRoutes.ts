@@ -7,6 +7,8 @@ export async function roomRoutes(app: FastifyInstance) {
   app.post('/rooms', auth, roomController.create);
   // Public: used by the student join screen (no auth).
   app.get('/rooms/:code/public', roomController.getPublic);
+  // Teacher-only: room + lesson (with moments) for the live panel.
+  app.get('/rooms/:code', auth, roomController.detail);
   app.post('/rooms/:code/end', auth, roomController.end);
   app.get('/rooms/:id/report', auth, roomController.report);
   app.get('/rooms/:id/report.csv', auth, roomController.reportCsv);

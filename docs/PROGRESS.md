@@ -41,9 +41,19 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] Testes RTL (OptionButton, PeerInstructionAnswer fases, Join) — 12 testes
 - [x] **Critérios de aceite:** aluno entra, vê espera, responde e vê confirmação; acessibilidade AA (foco, aria-live, labels)
 
-## PARTE 5–8 — Painel do professor, projetor, qualidade, deploy
+## PARTE 5 — Painel do professor (editor + ao vivo) ✅
 
-- [ ] PARTE 5 — Painel do professor (editor + ao vivo)
-- [ ] PARTE 6 — Modo Projetor
+- [x] Login + Dashboard (lições, Editar/Duplicar/Iniciar aula)
+- [x] Editor de roteiro (cabeçalho, dnd-kit, modal 9 tipos, formulários Zod, modelos, QR pré-aula)
+- [x] Painel ao vivo (3 colunas/abas, fases, contador, prévia de resultados, REEXPLAIN, moderação, timer, encerrar)
+- [x] Relatório pós-aula (participação, ganho Peer Instruction em gráfico, reflexões, export CSV, dúvidas)
+- [x] Backend: `GET /rooms/:code`, moderação host-only, evento `host:markWall`
+- [x] Code splitting das rotas do professor (bundle do aluno ~103 kB gzip)
+- [x] Testes RTL (reorderIds, MomentForm, ControlColumn avanço de fase) — 8 novos
+- [x] **Critérios de aceite:** editor add/reorder e painel de fase testados; ciclo Peer Instruction com dois gráficos (ResultsPreview)
+
+## PARTE 6–8 — Projetor, qualidade, deploy
+
+- [ ] PARTE 6 — Modo Projetor (`/screen/:code`) + formulário de pré-aula
 - [ ] PARTE 7 — Qualidade, segurança e experiência
 - [ ] PARTE 8 — Deploy

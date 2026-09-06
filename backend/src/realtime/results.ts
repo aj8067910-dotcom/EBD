@@ -32,6 +32,7 @@ function verseWordCount(config: Record<string, unknown>): number {
 export async function computeResults(
   room: RoomRuntime,
   moment: MomentRuntime,
+  options: { includeUnapproved?: boolean } = {},
 ): Promise<MomentResults | null> {
   const answers = await prisma.answer.findMany({
     where: { momentId: moment.id, roomId: room.roomId },
@@ -80,7 +81,10 @@ export async function computeResults(
           approved: a.approved,
         };
       });
-      return aggregateOpen(moment.type, cards, requireApproval);
+      // Hosts get every card (for moderation); the room gets only approved
+      // ones when approval is required.
+      const onlyApproved = requireApproval && !options.includeUnapproved;
+      return aggregateOpen(moment.type, cards, onlyApproved);
     }
 
     case 'QUIZ_TEAM': {

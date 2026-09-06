@@ -119,6 +119,7 @@ export class RoomStateManager {
       activePhase: (room.activePhase as MomentPhase | null) ?? null,
       timer: null,
       quiz: null,
+      hostSocketIds: new Set<string>(),
     };
     this.rooms.set(code, runtime);
     return runtime;
@@ -224,6 +225,28 @@ export class RoomStateManager {
     if (!moment) return;
     const results = await computeResults(room, moment);
     if (results) this.nsp.to(room.code).emit('moment:results', results);
+
+    // Hosts additionally get unapproved cards for moderation (open/reflection).
+    if (
+      (moment.type === 'OPEN_QUESTION' || moment.type === 'REFLECTION') &&
+      room.hostSocketIds.size > 0
+    ) {
+      const full = await computeResults(room, moment, { includeUnapproved: true });
+      if (full) {
+        for (const socketId of room.hostSocketIds) {
+          this.nsp.to(socketId).emit('moment:results', full);
+        }
+      }
+    }
+  }
+
+  /** Register/unregister a connected host socket for a room. */
+  addHost(room: RoomRuntime, socketId: string) {
+    room.hostSocketIds.add(socketId);
+  }
+
+  removeHost(socketId: string) {
+    for (const room of this.rooms.values()) room.hostSocketIds.delete(socketId);
   }
 
   async emitWall(room: RoomRuntime) {
@@ -500,6 +523,16 @@ export class RoomStateManager {
       where: { id },
       data: { upvotes: { increment: 1 } },
     });
+    await this.emitWall(room);
+  }
+
+  /** Host moderation of a wall question (mark answered / display on projector). */
+  async markWall(
+    room: RoomRuntime,
+    id: string,
+    patch: { answered?: boolean; displayed?: boolean },
+  ) {
+    await prisma.wallQuestion.update({ where: { id }, data: patch });
     await this.emitWall(room);
   }
 

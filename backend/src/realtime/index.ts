@@ -70,10 +70,12 @@ export function attachRealtime(app: FastifyInstance): {
           const room = await manager.getOrLoad(code.toUpperCase());
           if (room && room.teacherId === payload.sub) {
             socket.data.roomCode = room.code;
+            manager.addHost(room, socket.id);
             await socket.join(room.code);
             socket.emit('room:state', manager.stateView(room));
             manager.emitParticipants(room);
             await manager.emitWall(room);
+            if (room.activeMomentId) await manager.emitResults(room);
           }
         }
       } catch {
@@ -86,7 +88,10 @@ export function attachRealtime(app: FastifyInstance): {
     registerStudentHandlers(socket);
     registerHostHandlers(socket);
 
-    socket.on('disconnect', () => manager.markOffline(socket.id));
+    socket.on('disconnect', () => {
+      manager.removeHost(socket.id);
+      manager.markOffline(socket.id);
+    });
   }
 
   function registerStudentHandlers(socket: AppSocket) {
@@ -211,6 +216,13 @@ export function attachRealtime(app: FastifyInstance): {
       host<{ seconds: number; label?: string }>(async (room, { seconds, label }) => {
         manager.startTimer(room, seconds, label ?? '');
       }),
+    );
+    socket.on(
+      'host:markWall',
+      host<{ id: string; answered?: boolean; displayed?: boolean }>(
+        (room, { id, answered, displayed }) =>
+          manager.markWall(room, id, { answered, displayed }),
+      ),
     );
   }
 

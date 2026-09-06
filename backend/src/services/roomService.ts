@@ -1,6 +1,8 @@
 import type { PublicRoomInfo } from '@koinonia/shared';
 import { roomRepo } from '../repositories/roomRepo.js';
 import { lessonRepo } from '../repositories/lessonRepo.js';
+import { prisma } from '../prisma.js';
+import { toMomentDTO } from '../lib/moment.js';
 import { generateRoomCode } from '../lib/roomCode.js';
 import { Errors } from '../errors.js';
 
@@ -25,6 +27,41 @@ export const roomService = {
       status: room.status,
       lessonId: room.lessonId,
       createdAt: room.createdAt,
+    };
+  },
+
+  /** Teacher-only detailed view: room + lesson (with moments) + teams. */
+  async getForTeacher(code: string, teacherId: string) {
+    const room = await prisma.room.findUnique({
+      where: { code },
+      include: {
+        lesson: { include: { moments: { orderBy: { order: 'asc' } } } },
+        teams: { orderBy: { score: 'desc' } },
+      },
+    });
+    if (!room) throw Errors.notFound('Sala não encontrada');
+    if (room.teacherId !== teacherId) throw Errors.forbidden();
+    return {
+      room: {
+        id: room.id,
+        code: room.code,
+        status: room.status,
+        activeMomentId: room.activeMomentId,
+        activePhase: room.activePhase,
+        createdAt: room.createdAt,
+      },
+      lesson: {
+        id: room.lesson.id,
+        title: room.lesson.title,
+        bibleReference: room.lesson.bibleReference,
+        moments: room.lesson.moments.map(toMomentDTO),
+      },
+      teams: room.teams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        score: t.score,
+      })),
     };
   },
 

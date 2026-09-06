@@ -1,0 +1,173 @@
+// Koinonia Class — Prisma data model.
+//
+// Provider is SQLite in development. For production, switch `provider` to
+// "postgresql" and point DATABASE_URL at the Postgres instance
+// (see docker-compose.yml). SQLite does not support native enums, so status /
+// phase / type fields are modeled as String and validated in application code
+// against the shared Zod schemas.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Teacher {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  lessons Lesson[]
+  rooms   Room[]
+}
+
+model Lesson {
+  id             String   @id @default(cuid())
+  teacherId      String
+  title          String
+  bibleReference String
+  date           DateTime?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  teacher          Teacher            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  moments          Moment[]
+  rooms            Room[]
+  preClassResponses PreClassResponse[]
+
+  @@index([teacherId])
+}
+
+model Moment {
+  id               String  @id @default(cuid())
+  lessonId         String
+  order            Int
+  // One of the shared MomentType values (POLL, PEER_INSTRUCTION, ...).
+  type             String
+  title            String
+  // Type-specific configuration as JSON text (validated by shared Zod schemas).
+  // Stored as String for SQLite/Postgres portability; parsed in app code.
+  config           String
+  // For gradable moments (Peer Instruction): JSON array of correct option ids.
+  correctOptionIds String?
+  points           Int     @default(0)
+  isPreClass       Boolean @default(false)
+
+  lesson  Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@index([lessonId])
+}
+
+model Room {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  lessonId        String
+  teacherId       String
+  // WAITING | LIVE | ENDED
+  status          String    @default("WAITING")
+  activeMomentId  String?
+  // Current MomentPhase of the active moment, if any.
+  activePhase     String?
+  createdAt       DateTime  @default(now())
+  endedAt         DateTime?
+
+  lesson         Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  teacher        Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teams          Team[]
+  participants   Participant[]
+  answers        Answer[]
+  wallQuestions  WallQuestion[]
+
+  @@index([lessonId])
+  @@index([teacherId])
+}
+
+model Team {
+  id     String @id @default(cuid())
+  roomId String
+  name   String
+  color  String
+  score  Int    @default(0)
+
+  room         Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  participants Participant[]
+
+  @@index([roomId])
+}
+
+model Participant {
+  id       String   @id @default(cuid())
+  roomId   String
+  nickname String
+  teamId   String?
+  socketId String?
+  joinedAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  room     Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  team     Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  answers  Answer[]
+  wallQuestions WallQuestion[]
+
+  @@unique([roomId, nickname])
+  @@index([roomId])
+}
+
+model Answer {
+  id            String   @id @default(cuid())
+  momentId      String
+  roomId        String
+  participantId String
+  // MomentPhase this answer belongs to (OPEN, REOPEN, CLOSED, ...).
+  phase         String
+  // JSON text payload of the submitted answer (parsed in app code).
+  payload       String
+  isCorrect     Boolean?
+  approved      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  moment      Moment      @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  room        Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([momentId, participantId, phase])
+  @@index([roomId])
+  @@index([momentId])
+}
+
+model WallQuestion {
+  id            String   @id @default(cuid())
+  roomId        String
+  participantId String?
+  text          String
+  upvotes       Int      @default(0)
+  answered      Boolean  @default(false)
+  displayed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([roomId])
+}
+
+model PreClassResponse {
+  id        String   @id @default(cuid())
+  lessonId  String
+  nickname  String
+  momentId  String
+  // JSON text payload of the pre-class response (parsed in app code).
+  payload   String
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([momentId])
+}

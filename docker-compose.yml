@@ -1,0 +1,27 @@
+# Development infrastructure for Koinonia Class.
+# Brings up a PostgreSQL 16 instance used when the backend switches its
+# Prisma provider from sqlite (default in dev) to postgresql.
+#
+#   docker compose up -d
+#
+services:
+  postgres:
+    image: postgres:16
+    container_name: koinonia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: koinonia
+      POSTGRES_PASSWORD: koinonia
+      POSTGRES_DB: koinonia
+    ports:
+      - '5432:5432'
+    volumes:
+      - koinonia_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U koinonia -d koinonia']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  koinonia_pgdata:

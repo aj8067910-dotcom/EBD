@@ -13,9 +13,9 @@ build/
 .env.local
 .env.*.local
 
-# Prisma / SQLite dev database
-backend/prisma/dev.db
-backend/prisma/dev.db-journal
+# Prisma / SQLite databases
+*.db
+*.db-journal
 *.sqlite
 *.sqlite3
 

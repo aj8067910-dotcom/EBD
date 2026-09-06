@@ -12,13 +12,14 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] `docs/DECISIONS.md` e `docs/PROGRESS.md`
 - [x] **Critérios de aceite:** `npm install`, `build -w shared`, `prisma migrate`+`seed`, `lint`, `test` OK
 
-## PARTE 2 — Backend: autenticação, lições e salas (HTTP)
+## PARTE 2 — Backend: autenticação, lições e salas (HTTP) ✅
 
-- [ ] Auth do professor (register/login/me, JWT, bcrypt, rate-limit)
-- [ ] CRUD de lições e momentos (+ reorder, duplicate)
-- [ ] Salas (criar, pública, encerrar, relatório JSON/CSV)
-- [ ] Pré-aula (Just-in-Time Teaching)
-- [ ] Testes Supertest do fluxo completo
+- [x] Auth do professor (register/login/me, JWT, bcrypt, rate-limit)
+- [x] CRUD de lições e momentos (+ reorder, duplicate)
+- [x] Salas (criar, pública, encerrar, relatório JSON/CSV)
+- [x] Pré-aula (Just-in-Time Teaching)
+- [x] Testes Supertest do fluxo completo (15 testes)
+- [x] **Critérios de aceite:** testes passam; `curl` documentado no README funciona com o seed
 
 ## PARTE 3 — Backend: tempo real (Socket.IO) e motor de momentos
 

@@ -33,6 +33,8 @@ model Lesson {
   bibleReference String
   date           DateTime?
   notes          String?
+  // Short random token for the public pre-class (Just-in-Time Teaching) link.
+  preClassToken  String   @unique @default(cuid())
   createdAt      DateTime @default(now())
 
   teacher          Teacher            @relation(fields: [teacherId], references: [id], onDelete: Cascade)

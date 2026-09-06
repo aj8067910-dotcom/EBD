@@ -30,3 +30,29 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   ambiente; suporta o custo 12 exigido.
 - **Carregamento de `.env`** via `process.loadEnvFile()` (Node ≥ 20.6) sem
   dependência extra de `dotenv`.
+
+## PARTE 2 — Backend: autenticação, lições e salas (HTTP)
+
+- **Arquitetura em camadas** `routes/ → controllers/ → services/ →
+  repositories/`. Controllers validam entrada com Zod (schemas do `shared` +
+  schemas locais de request), services concentram regra de negócio e checagem
+  de propriedade (`teacherId`), repositories encapsulam Prisma.
+- **Erros centralizados** em `plugins/errorHandler.ts` — `AppError` (código +
+  status), `ZodError` e erros de rate-limit/JWT viram sempre
+  `{ error: { code, message } }`.
+- **JWT com `@fastify/jwt` + `@fastify/cookie`**: token entregue tanto em cookie
+  httpOnly quanto no corpo (Bearer). `requireTeacher` decorado na instância lê
+  de qualquer um dos dois. Expiração de 7 dias.
+- **bcrypt custo 12** em `authService` (via `bcryptjs`).
+- **Rate limit por rota** (`@fastify/rate-limit` com `global: false`) — 10/min no
+  login; reaproveitável em `room:join`/`wall:post` na PARTE 7.
+- **`config` de momento como texto JSON** validado por tipo com
+  `momentConfigByType` (Zod do `shared`) em `lib/moment.ts`; `toMomentDTO` faz o
+  parse de volta ao ler. `correctOptionIds` idem.
+- **Token de pré-aula** = campo `preClassToken` (cuid) na `Lesson`, passado por
+  query (`?token=`) nas rotas públicas de pré-aula — sem expor gabarito.
+- **Testes com Supertest** contra `app.server` (Fastify), banco SQLite de teste
+  isolado (`prisma db push` em `globalSetup`, `NODE_ENV=test` evita sobrescrever
+  `DATABASE_URL`), execução sequencial (`fileParallelism: false`).
+- **Relatório** consolidado (JSON e CSV) montado a partir das tabelas; % de
+  acerto antes/depois em PEER_INSTRUCTION calculado das fases `OPEN`/`REOPEN`.

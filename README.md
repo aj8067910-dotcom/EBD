@@ -57,6 +57,63 @@ O backend sobe em `http://localhost:3333` e o frontend em `http://localhost:5173
 | `npm run lint` | Lint nos três pacotes |
 | `npm run format` | Formata com Prettier |
 
+## API REST — exemplos com `curl`
+
+Com o backend rodando (`npm run dev -w backend`) e o banco populado pelo seed,
+o fluxo completo funciona assim (professor demo):
+
+```bash
+BASE=http://localhost:3333
+
+# 1. Login (retorna JWT em cookie httpOnly e no corpo)
+TOKEN=$(curl -s -X POST $BASE/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"professor@koinonia.dev","password":"demo1234"}' \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+
+# 2. Dados do professor autenticado
+curl -s $BASE/auth/me -H "Authorization: Bearer $TOKEN"
+
+# 3. Listar lições
+curl -s $BASE/lessons -H "Authorization: Bearer $TOKEN"
+
+# 4. Criar uma sala para a primeira lição
+LID=$(curl -s $BASE/lessons -H "Authorization: Bearer $TOKEN" \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0)).lessons[0].id')
+ROOM=$(curl -s -X POST $BASE/rooms -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d "{\"lessonId\":\"$LID\"}")
+echo "$ROOM"          # { "room": { "code": "XXXXXX", ... } }
+
+# 5. Info pública da sala (sem auth — usada pela tela de entrada do aluno)
+CODE=$(echo "$ROOM" | node -pe 'JSON.parse(require("fs").readFileSync(0)).room.code')
+curl -s $BASE/rooms/$CODE/public
+
+# 6. Encerrar a sala e gerar relatório
+curl -s -X POST $BASE/rooms/$CODE/end -H "Authorization: Bearer $TOKEN"
+RID=$(echo "$ROOM" | node -pe 'JSON.parse(require("fs").readFileSync(0)).room.id')
+curl -s $BASE/rooms/$RID/report -H "Authorization: Bearer $TOKEN"
+curl -s $BASE/rooms/$RID/report.csv -H "Authorization: Bearer $TOKEN"
+```
+
+Rotas principais:
+
+| Método | Rota | Auth | Descrição |
+|---|---|---|---|
+| POST | `/auth/register` `/auth/login` | — | Cadastro/login do professor (JWT) |
+| GET | `/auth/me` | ✅ | Professor autenticado |
+| GET/POST | `/lessons` | ✅ | Listar / criar lições |
+| GET/PUT/DELETE | `/lessons/:id` | ✅ | Detalhe / editar / excluir |
+| POST | `/lessons/:id/duplicate` | ✅ | Duplicar roteiro |
+| POST | `/lessons/:id/moments` | ✅ | Adicionar momento |
+| PUT/DELETE | `/moments/:id` | ✅ | Editar / excluir momento |
+| PATCH | `/lessons/:id/moments/reorder` | ✅ | Reordenar momentos |
+| POST | `/rooms` | ✅ | Criar sala (código 6 chars) |
+| GET | `/rooms/:code/public` | — | Info pública da sala |
+| POST | `/rooms/:code/end` | ✅ | Encerrar sala |
+| GET | `/rooms/:id/report(.csv)` | ✅ | Relatório consolidado |
+| GET/POST | `/lessons/:id/preclass?token=…` | — | Pré-aula (link público) |
+| GET | `/lessons/:id/preclass/summary` | ✅ | Resumo da pré-aula |
+
 ## Banco de dados
 
 Em desenvolvimento usamos **SQLite** (`backend/prisma/dev.db`). Para produção,

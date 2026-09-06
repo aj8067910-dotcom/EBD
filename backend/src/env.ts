@@ -1,11 +1,15 @@
 import { z } from 'zod';
 
 // Load .env if present (Node >= 20.6). Prisma CLI loads it separately.
-try {
-  // loadEnvFile is available on Node >= 20.6.
-  process.loadEnvFile?.();
-} catch {
-  // No .env file — rely on the ambient environment.
+// In tests the environment is provided by the test runner; loading .env would
+// override it (e.g. point DATABASE_URL back at the dev database).
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    // loadEnvFile is available on Node >= 20.6.
+    process.loadEnvFile?.();
+  } catch {
+    // No .env file — rely on the ambient environment.
+  }
 }
 
 const envSchema = z.object({

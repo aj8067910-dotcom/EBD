@@ -14,6 +14,9 @@ export default defineConfig({
     environment: 'node',
     globals: false,
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
+    globalSetup: ['./test/globalSetup.ts'],
+    // Prisma singleton + one SQLite file: run test files sequentially.
+    fileParallelism: false,
     env: {
       NODE_ENV: 'test',
       DATABASE_URL: 'file:./test.db',

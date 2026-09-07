@@ -23,7 +23,7 @@ export const authService = {
   async login(input: { email: string; password: string }) {
     const email = input.email.toLowerCase().trim();
     const teacher = await teacherRepo.findByEmail(email);
-    if (!teacher) {
+    if (!teacher || !teacher.passwordHash) {
       throw Errors.unauthorized('E-mail ou senha inválidos');
     }
     const ok = await bcrypt.compare(input.password, teacher.passwordHash);
@@ -45,7 +45,7 @@ export const authService = {
 function publicTeacher(teacher: {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   createdAt: Date;
 }) {
   return {

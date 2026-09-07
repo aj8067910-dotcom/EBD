@@ -144,6 +144,29 @@ Rotas principais:
 | GET | `/rooms/:id/report(.csv)` | ✅ | Relatório consolidado |
 | GET/POST | `/lessons/:id/preclass?token=…` | — | Pré-aula (link público) |
 | GET | `/lessons/:id/preclass/summary` | ✅ | Resumo da pré-aula |
+| POST | `/auth/whatsapp/request` `/register` `/verify` | — | Login/cadastro por número (OTP) |
+| GET | `/auth/whatsapp/me` | ✅ | Usuário autenticado por número |
+| GET/PATCH | `/profile` | ✅ | Perfil + preferência de leitura diária |
+| GET/POST | `/daily-readings` | ✅ (prof.) | Listar / criar leitura diária |
+| GET/PUT/DELETE | `/daily-readings/:id` | ✅ (prof.) | Detalhe / editar / excluir |
+| POST | `/daily-readings/:id/publish` `/send` | ✅ (prof.) | Publicar / enviar por WhatsApp |
+| GET | `/daily-readings/:id/art.png` `.svg` | — | Arte 1080×1080 (pública, por id) |
+
+## Leitura Diária e WhatsApp (PARTE 10)
+
+Membros podem entrar pelo **número de WhatsApp** (código OTP de 6 dígitos, só
+hash no banco, expira em 5 min) e receber uma **leitura diária** com uma **arte
+1080×1080** gerada no servidor na identidade visual do app. O envio (manual ou
+agendado) respeita a preferência de cada membro (opt-out em `/profile`), evita
+duplicidade e registra falhas. O número **nunca** é exibido público, no projetor
+ou em relatórios. Detalhes de uso em `docs/GUIA-DO-PROFESSOR.md`.
+
+O provedor de WhatsApp é abstraído: `WHATSAPP_PROVIDER=mock` (dev/test, registra
+o OTP no log) ou `cloud` (WhatsApp Business/Graph API). Variáveis relevantes em
+`.env.example`: `PUBLIC_BASE_URL`, `WHATSAPP_PROVIDER`, `WHATSAPP_API_URL`,
+`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`,
+`WHATSAPP_OTP_TEMPLATE_NAME`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e
+`TEACHER_WHATSAPP_ALLOWLIST` (números que se auto-registram como professor).
 
 ## Banco de dados
 

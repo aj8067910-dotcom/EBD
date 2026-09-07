@@ -15,11 +15,14 @@ async function main() {
 
   const teacher = await prisma.teacher.upsert({
     where: { email: DEMO_EMAIL },
-    update: {},
+    update: { whatsappNumber: '+5574999990000', role: 'TEACHER' },
     create: {
       name: 'Professor Demo',
       email: DEMO_EMAIL,
       passwordHash,
+      whatsappNumber: '+5574999990000',
+      role: 'TEACHER',
+      subscription: { create: {} },
     },
   });
 

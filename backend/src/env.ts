@@ -20,6 +20,20 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
+
+  // Public base URL used to build absolute art image URLs for WhatsApp.
+  PUBLIC_BASE_URL: z.string().default('http://localhost:3333'),
+
+  // WhatsApp Business / Cloud API (PARTE 10). Defaults to the mock provider.
+  WHATSAPP_PROVIDER: z.enum(['mock', 'cloud']).default('mock'),
+  WHATSAPP_API_URL: z.string().default('https://graph.facebook.com/v20.0'),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional(),
+  WHATSAPP_OTP_TEMPLATE_NAME: z.string().optional(),
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
+  // Comma-separated E.164 numbers allowed to self-register as TEACHER.
+  TEACHER_WHATSAPP_ALLOWLIST: z.string().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -10,12 +10,16 @@ export const JWT_EXPIRES_IN = '7d';
 
 export interface TeacherTokenPayload {
   sub: string;
-  email: string;
+  email?: string;
+  /** TEACHER | STUDENT. Absent on legacy email/password tokens (= TEACHER). */
+  role?: string;
 }
 
 declare module 'fastify' {
   interface FastifyRequest {
     teacherId?: string;
+    userId?: string;
+    userRole?: string;
   }
 }
 
@@ -44,9 +48,30 @@ export async function registerAuth(app: FastifyInstance) {
   app.decorate(
     'requireTeacher',
     async (request: FastifyRequest, _reply: FastifyReply) => {
+      let payload: TeacherTokenPayload;
+      try {
+        payload = await request.jwtVerify<TeacherTokenPayload>();
+      } catch {
+        throw Errors.unauthorized();
+      }
+      // Legacy tokens have no role and are teachers.
+      if (payload.role && payload.role !== 'TEACHER') {
+        throw Errors.forbidden('Acesso restrito a professores');
+      }
+      request.teacherId = payload.sub;
+      request.userId = payload.sub;
+      request.userRole = payload.role ?? 'TEACHER';
+    },
+  );
+
+  // Any authenticated user (teacher or student) — for profile/preferences.
+  app.decorate(
+    'requireUser',
+    async (request: FastifyRequest, _reply: FastifyReply) => {
       try {
         const payload = await request.jwtVerify<TeacherTokenPayload>();
-        request.teacherId = payload.sub;
+        request.userId = payload.sub;
+        request.userRole = payload.role ?? 'TEACHER';
       } catch {
         throw Errors.unauthorized();
       }
@@ -60,6 +85,7 @@ declare module 'fastify' {
       request: FastifyRequest,
       reply: FastifyReply,
     ) => Promise<void>;
+    requireUser: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 

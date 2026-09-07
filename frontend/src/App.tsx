@@ -23,6 +23,12 @@ const LivePanel = lazy(() =>
 const Report = lazy(() =>
   import('./pages/teacher/Report.js').then((m) => ({ default: m.Report })),
 );
+const DailyReadings = lazy(() =>
+  import('./pages/teacher/DailyReadings.js').then((m) => ({ default: m.DailyReadings })),
+);
+const Profile = lazy(() =>
+  import('./pages/Profile.js').then((m) => ({ default: m.Profile })),
+);
 const Screen = lazy(() =>
   import('./pages/Screen.js').then((m) => ({ default: m.Screen })),
 );
@@ -51,9 +57,11 @@ export function App() {
         <Route element={<RequireAuth />}>
           <Route path="/teacher" element={<Dashboard />} />
           <Route path="/teacher/lessons/:id" element={<LessonEditor />} />
+          <Route path="/teacher/daily-readings" element={<DailyReadings />} />
           <Route path="/teacher/live/:code" element={<LivePanel />} />
           <Route path="/teacher/rooms/:id/report" element={<Report />} />
         </Route>
+        <Route path="/profile" element={<Profile />} />
 
         <Route path="/screen/:code" element={<Screen />} />
         <Route path="/preclass/:token" element={<PreClass />} />

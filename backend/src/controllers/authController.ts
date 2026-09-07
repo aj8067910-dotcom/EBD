@@ -17,9 +17,13 @@ const loginSchema = z.object({
 
 async function issueToken(
   reply: FastifyReply,
-  teacher: { id: string; email: string },
+  teacher: { id: string; email: string | null },
 ) {
-  const token = await reply.jwtSign({ sub: teacher.id, email: teacher.email });
+  const token = await reply.jwtSign({
+    sub: teacher.id,
+    email: teacher.email ?? undefined,
+    role: 'TEACHER',
+  });
   setAuthCookie(reply, token);
   return token;
 }

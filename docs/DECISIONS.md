@@ -217,3 +217,56 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   conexão ao banco; **`create-teacher`** provisiona o primeiro professor.
 - **Sem Docker**: documentada a via gerenciada (Vercel/Netlify + Railway/Render
   com WebSocket + Neon/Supabase).
+
+## PARTE 10 — Leitura Diária, WhatsApp e autenticação por número
+
+- **Extensão, não renomeação, do modelo**: a tabela `Teacher` passou a ser a
+  **entidade Usuário** (campos `email`/`passwordHash` viraram opcionais; foram
+  adicionados `whatsappNumber @unique`, `role` `TEACHER`/`STUDENT`, `isActive`,
+  `updatedAt`, `lastLoginAt`). Renomear a tabela quebraria todas as relações
+  `teacherId` das PARTES 1–8; estender preserva o login por e-mail/senha e todo
+  o histórico. Documentado como decisão consciente (REGRA FINAL da PARTE 10).
+- **Migração incremental**: novos modelos `OtpCode`, `DailyReading`,
+  `WhatsAppSubscription` (opt-in/opt-out por usuário) e `WhatsAppMessage` (log de
+  envio) na migration `part10_whatsapp_daily_reading`. Nada das partes
+  anteriores foi substituído.
+- **Identidade única por número (E.164)**: `lib/phone.ts` normaliza toda entrada
+  com `libphonenumber-js` (região padrão `BR`) para E.164 antes de gravar/buscar
+  — o mesmo telefone nunca gera dois usuários. `maskPhone` produz a versão
+  mascarada (`+55 74 *****-9515`) usada em toda exibição.
+- **OTP seguro (10.5/10.18)**: código de 6 dígitos **nunca** é armazenado em texto
+  puro — só o **hash bcrypt** (custo 8) fica no banco, com expiração de 5 min,
+  invalidação dos códigos anteriores não consumidos, máximo de 5 tentativas e
+  **rate-limit por número** (`allow('otp:'+numero', 5, 15min)`) além do
+  rate-limit por rota. A verificação usa `bcrypt.compare` e consome o código.
+- **Abstração de provedor WhatsApp (10.8)**: interface `WhatsAppProvider`
+  (`sendText`/`sendImage`/`sendOtp`) com duas implementações — `Mock` (dev/test,
+  guarda o último OTP e mensagens em memória, com `failNext` para testar falhas)
+  e `Cloud` (WhatsApp Business/Graph API, POST autenticado). Selecionado por
+  `WHATSAPP_PROVIDER`. **Proibido por decisão**: WhatsApp Web automatizado,
+  Puppeteer, Selenium, QR de WhatsApp pessoal ou qualquer cliente simulado.
+- **Arte gerada no servidor**: `DailyReadingImageService` monta um **SVG** com a
+  identidade El Shaday (gradiente vermelho, halftone, estrelas de quatro pontas,
+  wordmark, título em caixa-alta, versículo entre aspas, cápsula coral com a
+  referência, data) e rasteriza para **PNG 1080×1080** com `sharp`. O SVG (preview
+  no navegador) carrega as fontes de marca; o PNG usa fontes do sistema
+  (sharp/librsvg) mantendo cores e layout. Textos bíblicos **nunca** são inseridos
+  automaticamente — só o que o professor cadastrou (10.13).
+- **Endpoints de arte públicos**: `/daily-readings/:id/art.png` (e `.svg`) são
+  públicos porque são endereçados por `cuid` e não expõem dado privado — assim o
+  WhatsApp/Meta consegue buscar a imagem por URL. O restante da gestão exige
+  `requireTeacher`.
+- **Envio manual + agendado com deduplicação (10.9/10.16)**: `whatsappMessageService`
+  resolve destinatários por audiência (todos/professores/alunos, respeitando o
+  opt-out) e envia sequencialmente via `provider.sendImage`, gravando
+  `SENT`/`FAILED`. A idempotência vem do `@@unique(dailyReadingId, userId, type)`:
+  reenvio pula quem já recebeu. `dailyReadingJob` roda a cada 60 s (`setInterval`
+  com `unref`) despachando leituras `PUBLISHED` com `scheduledAt <= now`.
+- **Papéis e autorização**: `requireTeacher` (rejeita `role` não-TEACHER) e novo
+  `requireUser` (qualquer usuário autenticado, para o perfil). O JWT carrega
+  `{ sub, role?, email? }`. Números na allowlist (`TEACHER_WHATSAPP_ALLOWLIST`)
+  se auto-registram como TEACHER; os demais como STUDENT.
+- **Compatibilidade (10.17)**: a entrada anônima do aluno (código + apelido, sem
+  cadastro) e o login por e-mail/senha do professor continuam funcionando sem
+  alteração de comportamento — os guards de `authService`/`authController` apenas
+  passaram a tratar `email`/`passwordHash` como possivelmente nulos.

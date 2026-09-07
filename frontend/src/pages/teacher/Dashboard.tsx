@@ -8,6 +8,7 @@ import {
 import { Button, Card, EmptyState, useToast } from '../../ui/index.js';
 import { loadLastRoom, saveLastRoom } from '../../lib/session.js';
 import { TeacherTour } from '../../components/TeacherTour.js';
+import { TeacherNav } from '../../components/TeacherNav.js';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export function Dashboard() {
   return (
     <div className="mx-auto max-w-3xl p-6">
       <TeacherTour />
+      <TeacherNav active="dashboard" />
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink">Minhas lições</h1>
         <div className="flex gap-2">

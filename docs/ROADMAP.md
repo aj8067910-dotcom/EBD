@@ -19,3 +19,16 @@
 - Modo "grupo pequeno / célula" sem projetor (o celular do líder faz esse papel).
 - Badges coletivos por presença e participação ao longo do trimestre.
 - Exportar resumo da aula para WhatsApp (texto formatado).
+
+## Leitura Diária / WhatsApp (evoluções futuras)
+
+Ideias registradas a partir da PARTE 10 (ainda não implementadas):
+
+- **Personalização de template da arte** por professor/turma (cores, logo).
+- **Múltiplos layouts de leitura** (além do modelo El Shaday padrão).
+- **Calendário de leituras** (visão mensal, planejamento antecipado).
+- **Sequência automática de leituras** (plano de leitura em série).
+- **Estatísticas de entrega** (enviadas/entregues/lidas por período).
+- **Confirmação de leitura** ("li"/reação) pelos membros.
+- **Compartilhamento individual** (link/arte por pessoa).
+- **Integração futura com outros canais** de comunicação (e-mail, Telegram etc.).

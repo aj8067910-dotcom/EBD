@@ -79,3 +79,45 @@ relatório. **Exemplo:** compromisso prático de cada aluno.
 - Use o **mural** para acolher dúvidas tímidas; responda as mais votadas.
 - Ao final, use o **relatório** para planejar a próxima aula (dúvidas não
   respondidas e conceitos com baixo acerto).
+
+## Leitura Diária pelo WhatsApp
+
+O Koinonia Class permite enviar uma **leitura diária** para os membros da turma
+pelo WhatsApp, com uma **arte 1080×1080** gerada automaticamente na identidade
+visual do app.
+
+### Entrar com o número de WhatsApp
+
+Além do e-mail/senha, você pode entrar por **WhatsApp** em `/teacher/login`
+(botão *WhatsApp*):
+
+1. Informe o número; você recebe um **código de 6 dígitos** por WhatsApp.
+2. Digite o código para entrar. O código **expira em 5 minutos** e é de uso
+   único.
+
+Seu número fica **guardado com segurança** e nunca é exibido publicamente, no
+projetor ou nos relatórios — apenas de forma mascarada (ex.: `+55 74 *****-9515`)
+na sua própria tela de perfil.
+
+### Cadastrar e enviar uma leitura
+
+1. No menu, abra **Leitura Diária** (`/teacher/daily-readings`).
+2. Clique em **+ Nova leitura** e preencha:
+   - **Título** (obrigatório),
+   - **Versículo** (obrigatório) — cole você mesmo o texto; nada é inserido
+     automaticamente,
+   - **Referência** (obrigatória, ex.: `Efésios 2:8`),
+   - **Mensagem** e **data/agendamento** (opcionais).
+3. Salve. O sistema gera a **arte** automaticamente. Use **Visualizar** para
+   conferir e **Baixar arte** se quiser compartilhar manualmente.
+4. Escolha os destinatários (**todos**, **professores** ou **alunos**) e clique
+   em **Enviar**. Quem já recebeu aquela leitura **não recebe duas vezes**.
+
+Se preferir, defina um **horário de agendamento**: leituras publicadas com data
+marcada são enviadas automaticamente quando chega a hora.
+
+### Preferências dos membros
+
+Cada pessoa controla, na página **Perfil** (`/profile`), se quer **receber a
+leitura diária pelo WhatsApp**. Quem desativa é automaticamente excluído dos
+envios. Respeite sempre essa preferência — é a base do bom uso da mensageria.

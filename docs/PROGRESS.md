@@ -82,3 +82,18 @@ Checklist por parte. Marque `[x]` ao concluir com testes/critérios verificados.
 - [x] `npm run deploy:check` (valida env + conexão ao banco) — verificado
 - [x] README: diagrama Mermaid, variáveis, comandos, backup/restore, criar 1º professor (`create-teacher`)
 - [x] **Critérios de aceite:** compose escrito para subir tudo e servir em https://localhost (build não executável nesta sessão — sem daemon Docker)
+
+## PARTE 10 — Leitura Diária, WhatsApp e autenticação por número ✅
+
+- [x] Modelo de dados estendido (`Teacher` = entidade Usuário: `whatsappNumber`, `role`, `isActive`), `OtpCode`, `DailyReading`, `WhatsAppSubscription`, `WhatsAppMessage`; migration `part10_whatsapp_daily_reading`
+- [x] Normalização E.164 (`libphonenumber-js`, região BR) + mascaramento (`maskPhone`) — o mesmo número nunca vira dois usuários
+- [x] Autenticação por número via **OTP** (6 dígitos, **só hash bcrypt**, expira em 5 min, rate-limit por número, máx. 5 tentativas)
+- [x] Abstração de provedor WhatsApp (`WhatsAppProvider`) com **Mock** (dev/test) e **Cloud** (Graph API) — sem WhatsApp Web/Puppeteer/Selenium/QR pessoal
+- [x] Leitura Diária: professor cadastra (título, versículo, referência, data, mensagem opcional, status DRAFT/PUBLISHED/SENT)
+- [x] Geração de arte 1080×1080 no servidor (SVG → PNG via `sharp`) obedecendo a identidade El Shaday; endpoints de arte **públicos** (só o id, sem dado privado)
+- [x] Envio por WhatsApp (manual + agendado via job de 60 s) com **deduplicação** (`@@unique(dailyReadingId, userId, type)`) e **registro de falhas**
+- [x] Privacidade: número nunca exibido público/no projetor/em relatórios; opt-in/opt-out por `WhatsAppSubscription`; tokens só no backend
+- [x] Frontend: login por WhatsApp (2 passos), painel de Leitura Diária (dashboard + editor + preview + baixar/enviar), página de Perfil (número mascarado + preferência)
+- [x] Entrada anônima do aluno (código + apelido) **preservada** (PARTE 10.17 — sem cadastro); login por e-mail/senha do professor intacto
+- [x] Testes (backend +15: phone, OTP, leitura diária, arte, envio/idempotência/falha/opt-out, job agendado) + E2E (`e2e/part10.spec.ts`); lint/build/test verdes
+- [x] **Critérios de aceite:** OTP só hash + expira + rate-limit; E.164; arte 1080×1080 com título/versículo/referência na identidade visual; envio manual e agendado; duplicidade impedida; falhas registradas; número nunca público; docs atualizadas

@@ -1,11 +1,13 @@
 import { buildApp } from './app.js';
 import { attachRealtime } from './realtime/index.js';
+import { startDailyReadingScheduler } from './jobs/dailyReadingJob.js';
 import { env } from './env.js';
 import { prisma } from './prisma.js';
 
 async function start() {
   const app = await buildApp();
   attachRealtime(app);
+  startDailyReadingScheduler();
 
   const close = async () => {
     await app.close();

@@ -10,6 +10,10 @@ export async function makeApp(): Promise<FastifyInstance> {
 
 /** Delete all rows in FK-safe order for an isolated test. */
 export async function resetDb() {
+  await prisma.whatsAppMessage.deleteMany();
+  await prisma.dailyReading.deleteMany();
+  await prisma.whatsAppSubscription.deleteMany();
+  await prisma.otpCode.deleteMany();
   await prisma.answer.deleteMany();
   await prisma.wallQuestion.deleteMany();
   await prisma.preClassResponse.deleteMany();

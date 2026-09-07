@@ -15,15 +15,104 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// The Teacher table is the application User entity (PARTE 10). It keeps its name
+// to avoid churn on existing relations; `role` distinguishes TEACHER from a
+// registered STUDENT (anonymous room participants are a separate concept).
 model Teacher {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id             String    @id @default(cuid())
+  name           String
+  // Email/password auth stays optional for backward compatibility.
+  email          String?   @unique
+  passwordHash   String?
+  // WhatsApp identity (E.164). Unique across users; the OTP login key.
+  whatsappNumber String?   @unique
+  role           String    @default("TEACHER") // TEACHER | STUDENT
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt @default(now())
+  lastLoginAt    DateTime?
 
-  lessons Lesson[]
-  rooms   Room[]
+  lessons        Lesson[]
+  rooms          Room[]
+  dailyReadings  DailyReading[]
+  subscription   WhatsAppSubscription?
+  whatsappMessages WhatsAppMessage[]
+
+  @@index([role])
+}
+
+// One-time password challenges for WhatsApp login (stored hashed, short-lived).
+model OtpCode {
+  id             String   @id @default(cuid())
+  whatsappNumber String
+  codeHash       String
+  purpose        String   @default("LOGIN") // LOGIN | REGISTER
+  attempts       Int      @default(0)
+  consumed       Boolean  @default(false)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([whatsappNumber])
+  @@index([expiresAt])
+}
+
+// A daily reading a teacher can publish and send by WhatsApp.
+model DailyReading {
+  id          String    @id @default(cuid())
+  teacherId   String
+  title       String
+  verse       String
+  reference   String
+  message     String?
+  readingDate DateTime
+  imageUrl    String?
+  // DRAFT | PUBLISHED | SENT
+  status      String    @default("DRAFT")
+  scheduledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt @default(now())
+  publishedAt DateTime?
+  sentAt      DateTime?
+
+  teacher  Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  messages WhatsAppMessage[]
+
+  @@index([teacherId])
+  @@index([readingDate])
+  @@index([status])
+}
+
+// Per-user communication preferences (opt-in/opt-out for daily readings).
+model WhatsAppSubscription {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  enabled             Boolean  @default(true)
+  dailyReadingEnabled Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt @default(now())
+
+  user Teacher @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// One row per (reading, user, type) to record delivery and prevent duplicates.
+model WhatsAppMessage {
+  id                String   @id @default(cuid())
+  userId            String
+  dailyReadingId    String?
+  type              String   @default("DAILY_READING")
+  // PENDING | SENT | FAILED | CANCELLED
+  status            String   @default("PENDING")
+  providerMessageId String?
+  errorMessage      String?
+  sentAt            DateTime?
+  createdAt         DateTime @default(now())
+
+  user         Teacher       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyReading DailyReading? @relation(fields: [dailyReadingId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyReadingId, userId, type])
+  @@index([userId])
+  @@index([status])
 }
 
 model Lesson {

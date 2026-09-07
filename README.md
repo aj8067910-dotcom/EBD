@@ -225,6 +225,13 @@ cat backup.sql | docker compose -f docker-compose.prod.yml exec -T postgres \
   psql -U koinonia -d koinonia
 ```
 
+### Render (gerenciado, um provedor só) — `render.yaml`
+
+O repositório traz um **Blueprint** do Render que sobe banco + backend +
+frontend de uma vez. Passo a passo completo em **`docs/DEPLOY-RENDER.md`**
+(New + → Blueprint → apontar para o repo; depois preencher as URLs finais e o
+login de admin via `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+
 ### Sem Docker (alternativa gerenciada)
 
 - **Frontend** (Vercel/Netlify): build `npm run build -w frontend`, publique

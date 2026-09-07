@@ -1,0 +1,68 @@
+# Render Blueprint — Koinonia Class
+# ---------------------------------------------------------------------------
+# Cria, de uma vez: banco Postgres + API (backend) + site (frontend).
+# Passo a passo: Render Dashboard → New + → Blueprint → aponte para este repo.
+#
+# O JWT_SECRET é gerado automaticamente. Depois do 1º deploy você preenche os
+# campos marcados como `sync: false` (URLs finais e login de admin) e clica em
+# "Manual Deploy" nos dois serviços. Veja docs/DEPLOY-RENDER.md.
+# ---------------------------------------------------------------------------
+
+databases:
+  - name: koinonia-db
+    plan: free
+    databaseName: koinonia
+    user: koinonia
+
+services:
+  # ----- API (backend Node/Fastify + Socket.IO, via Docker) ----------------
+  - type: web
+    name: koinonia-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: koinonia-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true # gerado pelo Render, forte e único
+      - key: NODE_ENV
+        value: production
+      - key: WHATSAPP_PROVIDER
+        value: mock # troque para "cloud" quando ligar a API oficial do WhatsApp
+      # URL pública DESTE serviço (para gerar os links das artes). Preencha
+      # depois do 1º deploy com https://koinonia-api-XXXX.onrender.com
+      - key: PUBLIC_BASE_URL
+        sync: false
+      # URL do site (frontend) — necessária para o CORS. Preencha depois.
+      - key: CORS_ORIGIN
+        sync: false
+      # Login de administrador criado automaticamente no 1º boot (idempotente).
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        sync: false
+
+  # ----- Site (frontend React/Vite, estático) ------------------------------
+  - type: web
+    name: koinonia-web
+    runtime: static
+    buildCommand: npm ci && npm run build -w shared && npm run build -w frontend
+    staticPublishPath: ./frontend/dist
+    # SPA: qualquer rota cai no index.html (React Router cuida do resto).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # URL da API (backend). Preencha depois do 1º deploy e refaça o build.
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_WS_URL
+        sync: false

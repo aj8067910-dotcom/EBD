@@ -34,6 +34,14 @@ const envSchema = z.object({
   WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
   // Comma-separated E.164 numbers allowed to self-register as TEACHER.
   TEACHER_WHATSAPP_ALLOWLIST: z.string().default(''),
+
+  // Optional first-admin bootstrap. When both ADMIN_EMAIL and ADMIN_PASSWORD
+  // are set, a teacher account is created on startup if it does not yet exist
+  // (idempotent). Lets a fresh production deploy come up with a ready login
+  // without shipping a known demo password.
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD: z.string().min(8).optional(),
+  ADMIN_NAME: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

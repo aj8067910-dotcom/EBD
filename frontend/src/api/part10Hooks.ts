@@ -187,6 +187,29 @@ export function useSendReading() {
   });
 }
 
+/* --------------------------------------------------------------- bible */
+
+export interface BiblePassage {
+  reference: string;
+  text: string;
+}
+
+/** Fetches a public-domain passage for a book/chapter/verse selection. */
+export function fetchBiblePassage(input: {
+  abbrev: string;
+  chapter: number;
+  verseStart: number;
+  verseEnd?: number | null;
+}): Promise<BiblePassage> {
+  const params = new URLSearchParams({
+    abbrev: input.abbrev,
+    chapter: String(input.chapter),
+    verseStart: String(input.verseStart),
+  });
+  if (input.verseEnd) params.set('verseEnd', String(input.verseEnd));
+  return api.get<BiblePassage>(`/bible/passage?${params.toString()}`, true);
+}
+
 export function readingArtPng(id: string): string {
   return `${API_URL}/daily-readings/${id}/art.png`;
 }

@@ -270,3 +270,28 @@ Registro cronológico das decisões de arquitetura e ferramentas.
   cadastro) e o login por e-mail/senha do professor continuam funcionando sem
   alteração de comportamento — os guards de `authService`/`authController` apenas
   passaram a tratar `email`/`passwordHash` como possivelmente nulos.
+
+## Pós-deploy — ajustes de produção (Render)
+
+- **Deploy no Render**: `render.yaml` (Blueprint) sobe backend (Docker) + site
+  estático; banco Postgres externo no **Neon** (o Postgres grátis do Render
+  expira em 30 dias — o do Neon não). `JWT_SECRET` gerado pelo Render; URLs e
+  login de admin preenchidos após o 1º deploy. Admin criado no boot via
+  `ADMIN_EMAIL`/`ADMIN_PASSWORD` (`bootstrap/admin.ts`, idempotente).
+- **Fontes na imagem do backend**: o Alpine subia sem fontes e o `sharp`/librsvg
+  renderizava o texto da arte como tofu (□). Adicionado `fontconfig` +
+  `ttf-dejavu` no Dockerfile de runtime.
+- **Service worker não cacheia API**: o SW fazia cache-first de toda resposta
+  GET, inclusive `/lessons` e `/daily-readings`, congelando as listas na
+  primeira resposta (vazia) mesmo com os POSTs persistindo. Corrigido para
+  cachear **apenas** assets estáticos de mesma origem; API/WS sempre vão à rede
+  (cache renomeado para `koinonia-v2`).
+- **Seletor de Bíblia (domínio público)**: `shared/bible.ts` traz a estrutura
+  canônica (66 livros, contagem de capítulos/versículos — apenas fatos, sem
+  texto). O texto do versículo é buscado sob demanda de uma tradução em
+  **domínio público** (João Ferreira de Almeida via bible-api.com) em
+  `bibleService` (com cache em memória), exposto em `GET /bible/passage`
+  (professor). No editor, o professor escolhe livro/capítulo/versículo e o texto
+  + referência são preenchidos automaticamente, permanecendo **editáveis** —
+  respeitando a regra 10.13 (nada é inserido sem ação do professor) e o direito
+  autoral (traduções proprietárias não são embutidas).

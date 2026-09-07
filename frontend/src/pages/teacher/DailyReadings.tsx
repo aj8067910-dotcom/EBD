@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BIBLE_BOOKS } from '@koinonia/shared';
 import { Badge, Button, Card, EmptyState, useToast } from '../../ui/index.js';
 import { Modal as _Modal } from '../../components/Modal.js';
 import {
@@ -9,6 +10,7 @@ import {
   useRecipientsCount,
   useSendReading,
   useUpdateReading,
+  fetchBiblePassage,
   readingArtPng,
   type DailyReading,
   type ReadingInput,
@@ -173,6 +175,128 @@ export function DailyReadings() {
   );
 }
 
+/** Book/chapter/verse picker that fills the reference + verse text from a
+ * public-domain translation (João Ferreira de Almeida). Text stays editable. */
+function BiblePicker({ onPick }: { onPick: (reference: string, text: string) => void }) {
+  const [bookIdx, setBookIdx] = useState(42); // João
+  const [chapter, setChapter] = useState(3);
+  const [verseStart, setVerseStart] = useState(16);
+  const [verseEnd, setVerseEnd] = useState<number | ''>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const book = BIBLE_BOOKS[bookIdx] ?? BIBLE_BOOKS[0];
+  if (!book) return null;
+  const chapterCount = book.chapters.length;
+  const verseCount = book.chapters[Math.min(chapter, chapterCount) - 1] ?? 1;
+  const selectCls =
+    'mt-1 min-h-[44px] w-full rounded-xl border border-line bg-surface px-2 text-sm';
+
+  const insert = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetchBiblePassage({
+        abbrev: book.abbrev,
+        chapter,
+        verseStart,
+        verseEnd: verseEnd === '' ? null : verseEnd,
+      });
+      onPick(res.reference, res.text);
+    } catch {
+      setError('Não foi possível buscar o texto agora. Digite o versículo manualmente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-line bg-surface/50 p-3">
+      <p className="mb-2 text-sm font-medium text-ink">Escolher da Bíblia</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <label className="text-xs text-muted">
+          Livro
+          <select
+            className={selectCls}
+            value={bookIdx}
+            onChange={(e) => {
+              setBookIdx(Number(e.target.value));
+              setChapter(1);
+              setVerseStart(1);
+              setVerseEnd('');
+            }}
+          >
+            {BIBLE_BOOKS.map((b, i) => (
+              <option key={b.abbrev} value={i}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-muted">
+          Capítulo
+          <select
+            className={selectCls}
+            value={Math.min(chapter, chapterCount)}
+            onChange={(e) => {
+              setChapter(Number(e.target.value));
+              setVerseStart(1);
+              setVerseEnd('');
+            }}
+          >
+            {Array.from({ length: chapterCount }, (_, i) => i + 1).map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-muted">
+          Versículo
+          <select
+            className={selectCls}
+            value={Math.min(verseStart, verseCount)}
+            onChange={(e) => {
+              setVerseStart(Number(e.target.value));
+              setVerseEnd('');
+            }}
+          >
+            {Array.from({ length: verseCount }, (_, i) => i + 1).map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-muted">
+          até (opcional)
+          <select
+            className={selectCls}
+            value={verseEnd}
+            onChange={(e) => setVerseEnd(e.target.value === '' ? '' : Number(e.target.value))}
+          >
+            <option value="">—</option>
+            {Array.from({ length: verseCount }, (_, i) => i + 1)
+              .filter((v) => v > verseStart)
+              .map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+          </select>
+        </label>
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <Button variant="secondary" onClick={insert} disabled={loading}>
+          {loading ? 'Buscando…' : 'Inserir texto'}
+        </Button>
+        <span className="text-xs text-muted">Tradução em domínio público — você pode editar depois.</span>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+    </div>
+  );
+}
+
 function ReadingEditor({
   reading,
   onClose,
@@ -221,6 +345,12 @@ function ReadingEditor({
             onChange={(e) => set('title', e.target.value)}
           />
         </label>
+        <BiblePicker
+          onPick={(reference, text) =>
+            setForm((p) => ({ ...p, reference, verse: text }))
+          }
+        />
+
         <label className="text-sm font-medium text-ink">
           Versículo
           <textarea

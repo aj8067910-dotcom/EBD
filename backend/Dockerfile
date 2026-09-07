@@ -28,7 +28,9 @@ RUN sed -i 's/provider = "sqlite"/provider = "postgresql"/' backend/prisma/schem
 # ---- runtime -------------------------------------------------------------
 FROM node:20-alpine AS runtime
 WORKDIR /app
-RUN apk add --no-cache openssl
+# openssl for Prisma; fontconfig + DejaVu so sharp/librsvg can rasterize the
+# daily-reading art text (Alpine ships with no fonts → text renders as tofu).
+RUN apk add --no-cache openssl fontconfig ttf-dejavu && fc-cache -f
 ENV NODE_ENV=production
 
 COPY --from=build /app/node_modules ./node_modules

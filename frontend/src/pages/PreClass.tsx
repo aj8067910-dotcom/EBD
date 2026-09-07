@@ -3,12 +3,15 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import type { MomentType } from '@koinonia/shared';
 import { api } from '../api/client.js';
 import { Button, Card, Input, OptionButton, useToast } from '../ui/index.js';
+import { MomentImage } from '../moments/MomentImage.js';
 
 interface PreClassMoment {
   id: string;
   type: MomentType;
   title: string;
   config: Record<string, unknown>;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
 }
 interface PreClassData {
   lessonId: string;
@@ -91,6 +94,7 @@ export function PreClass() {
 
       {data.moments.map((m) => (
         <Card key={m.id} className="flex flex-col gap-3">
+          <MomentImage moment={m} variant="student" />
           <MomentInput
             moment={m}
             onAnswer={(payload) => setAnswers((prev) => ({ ...prev, [m.id]: payload }))}

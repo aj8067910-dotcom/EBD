@@ -9,6 +9,8 @@ interface MomentWriteData {
   correctOptionIds: string | null;
   points: number;
   isPreClass: boolean;
+  imageUrl: string | null;
+  imageAlt: string | null;
 }
 
 export const momentRepo = {

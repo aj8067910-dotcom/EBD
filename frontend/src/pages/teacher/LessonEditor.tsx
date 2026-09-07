@@ -75,6 +75,8 @@ export function LessonEditor() {
     isPreClass: m.isPreClass,
     config: m.config,
     correctOptionIds: m.correctOptionIds ?? undefined,
+    imageUrl: m.imageUrl ?? undefined,
+    imageAlt: m.imageAlt ?? undefined,
   });
 
   return (

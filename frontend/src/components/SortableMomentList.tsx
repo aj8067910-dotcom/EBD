@@ -108,6 +108,7 @@ function SortableItem({
         <p className="truncate font-semibold text-ink">{moment.title}</p>
         <p className="text-sm text-muted">
           {entry?.name} · {moment.points} pts
+          {moment.imageUrl ? ' · 🖼️ com imagem' : ''}
         </p>
       </div>
       <label className="flex items-center gap-1 text-xs text-muted">

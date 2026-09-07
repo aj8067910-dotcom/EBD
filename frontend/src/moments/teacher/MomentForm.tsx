@@ -31,12 +31,16 @@ export function MomentForm({ type, initial, onSubmit, onCancel }: MomentFormProp
   const [correctOptionIds, setCorrectOptionIds] = useState<string[]>(
     initial?.correctOptionIds ?? [],
   );
+  const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? '');
+  const [imageAlt, setImageAlt] = useState(initial?.imageAlt ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const set = (key: string, value: unknown) =>
     setConfig((prev) => ({ ...prev, [key]: value }));
 
   const submit = () => {
+    const trimmedUrl = imageUrl.trim();
+    const trimmedAlt = imageAlt.trim();
     const draft: MomentDraft = {
       type,
       title,
@@ -44,6 +48,8 @@ export function MomentForm({ type, initial, onSubmit, onCancel }: MomentFormProp
       isPreClass,
       config,
       ...(type === 'PEER_INSTRUCTION' ? { correctOptionIds } : {}),
+      ...(trimmedUrl ? { imageUrl: trimmedUrl } : {}),
+      ...(trimmedAlt ? { imageAlt: trimmedAlt } : {}),
     };
     const parsed = createMomentSchema.safeParse(draft);
     if (!parsed.success) {
@@ -63,6 +69,13 @@ export function MomentForm({ type, initial, onSubmit, onCancel }: MomentFormProp
       <Input name="title" label="Título" value={title} onChange={(e) => setTitle(e.target.value)} />
 
       {renderTypeFields(type, config, set, correctOptionIds, setCorrectOptionIds)}
+
+      <ImageField
+        url={imageUrl}
+        alt={imageAlt}
+        onUrl={setImageUrl}
+        onAlt={setImageAlt}
+      />
 
       {type === 'QUIZ_TEAM' && (
         <Input
@@ -234,6 +247,73 @@ function renderTypeFields(
     default:
       return null;
   }
+}
+
+/* ------------------------------------------------------------- image field */
+
+/**
+ * Optional illustrative image (comic strip / "tirinha", cartoon / "charge", or
+ * any picture) that presents the "case" visually instead of only in text.
+ * The teacher pastes an image URL; a live preview confirms it loads.
+ */
+function ImageField({
+  url,
+  alt,
+  onUrl,
+  onAlt,
+}: {
+  url: string;
+  alt: string;
+  onUrl: (v: string) => void;
+  onAlt: (v: string) => void;
+}) {
+  const [broken, setBroken] = useState(false);
+  const trimmed = url.trim();
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-dashed border-line p-3">
+      <span className="text-sm font-medium text-ink">
+        🖼️ Imagem do caso (opcional)
+      </span>
+      <p className="text-xs text-muted">
+        Cole o link de uma imagem (tirinha, charge ou foto) para apresentar a
+        situação visualmente. Hospede a imagem (ex.: Google Fotos, Imgur) e cole
+        aqui o endereço que termina em .jpg, .png ou .webp.
+      </p>
+      <Input
+        name="imageUrl"
+        label="URL da imagem"
+        type="url"
+        placeholder="https://…/tirinha.png"
+        value={url}
+        onChange={(e) => {
+          setBroken(false);
+          onUrl(e.target.value);
+        }}
+      />
+      <Input
+        name="imageAlt"
+        label="Legenda / descrição (acessibilidade)"
+        placeholder="Ex.: Tirinha em que dois amigos discutem sobre perdão"
+        value={alt}
+        onChange={(e) => onAlt(e.target.value)}
+      />
+      {trimmed && !broken && (
+        <img
+          src={trimmed}
+          alt={alt || 'Pré-visualização da imagem do caso'}
+          className="mt-1 max-h-64 w-full rounded-lg border border-line object-contain"
+          onError={() => setBroken(true)}
+        />
+      )}
+      {trimmed && broken && (
+        <p className="text-sm text-danger">
+          Não foi possível carregar a imagem. Verifique se o link é público e
+          aponta direto para o arquivo da imagem.
+        </p>
+      )}
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------- sub-editors */

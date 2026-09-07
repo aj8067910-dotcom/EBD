@@ -82,6 +82,10 @@ export interface ActiveMomentView {
   points: number;
   /** Type-specific presentation config (question, options, prompt, ...). */
   config: unknown;
+  /** Optional illustrative image (comic strip / cartoon / picture). */
+  imageUrl?: string | null;
+  /** Optional caption / alt text for the illustrative image. */
+  imageAlt?: string | null;
 }
 
 export interface RoomStateView {

@@ -45,6 +45,8 @@ export const momentService = {
       correctOptionIds: correctIdsFrom(dto),
       points: dto.points,
       isPreClass: dto.isPreClass,
+      imageUrl: dto.imageUrl ?? null,
+      imageAlt: dto.imageAlt ?? null,
     });
     return toMomentDTO(created);
   },
@@ -60,6 +62,8 @@ export const momentService = {
       correctOptionIds: correctIdsFrom(dto),
       points: dto.points,
       isPreClass: dto.isPreClass,
+      imageUrl: dto.imageUrl ?? null,
+      imageAlt: dto.imageAlt ?? null,
     });
     return toMomentDTO(updated);
   },

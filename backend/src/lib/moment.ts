@@ -13,6 +13,8 @@ export interface MomentDTO {
   correctOptionIds: string[] | null;
   points: number;
   isPreClass: boolean;
+  imageUrl: string | null;
+  imageAlt: string | null;
 }
 
 /**
@@ -48,6 +50,8 @@ export function toMomentDTO(row: Moment): MomentDTO {
       : null,
     points: row.points,
     isPreClass: row.isPreClass,
+    imageUrl: row.imageUrl ?? null,
+    imageAlt: row.imageAlt ?? null,
   };
 }
 

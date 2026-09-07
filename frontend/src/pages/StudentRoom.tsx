@@ -11,6 +11,7 @@ import {
 import { loadSession } from '../lib/session.js';
 import { Badge, Timer, useToast } from '../ui/index.js';
 import { MomentRenderer } from '../moments/student/MomentRenderer.js';
+import { MomentImage } from '../moments/MomentImage.js';
 import { WallPanel } from '../moments/student/WallPanel.js';
 import type { SubmitResult } from '../moments/student/types.js';
 
@@ -100,12 +101,15 @@ export function StudentRoom() {
 
       <main className="flex-1">
         {activeMoment ? (
-          <MomentRenderer
-            moment={activeMoment}
-            phase={phase}
-            teamColor={myTeam?.color ?? null}
-            submit={submit}
-          />
+          <div className="flex flex-col gap-4">
+            <MomentImage moment={activeMoment} variant="student" />
+            <MomentRenderer
+              moment={activeMoment}
+              phase={phase}
+              teamColor={myTeam?.color ?? null}
+              submit={submit}
+            />
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="h-12 w-12 animate-pulse rounded-full bg-brand-soft" aria-hidden />

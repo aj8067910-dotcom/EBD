@@ -142,11 +142,36 @@ export type TimerConfig = z.infer<typeof timerConfigSchema>;
  * CreateMomentDTO — discriminated union by moment type
  * ------------------------------------------------------------------------ */
 
+/**
+ * Optional illustrative image (a comic strip / "tirinha", cartoon / "charge",
+ * or any picture) shown alongside the moment on the projector and on the
+ * students' phones. Teachers paste an image URL; an empty value means "none".
+ */
+const optionalImageUrl = z
+  .union([
+    z.literal(''),
+    z.string().trim().url('Informe uma URL de imagem válida (http/https)').max(2048),
+  ])
+  .optional()
+  .transform((v) => (v ? v : undefined));
+
+/** Short description / caption of the image (accessibility + shown as caption). */
+const optionalImageAlt = z
+  .string()
+  .trim()
+  .max(280)
+  .optional()
+  .transform((v) => (v ? v : undefined));
+
 const baseMomentFields = {
   title: z.string().min(1).max(160),
   points: z.number().int().min(0).max(1000).default(0),
   isPreClass: z.boolean().default(false),
   order: z.number().int().min(0).optional(),
+  /** Optional illustrative image URL (comic strip / cartoon / picture). */
+  imageUrl: optionalImageUrl,
+  /** Optional caption / alt text for the illustrative image. */
+  imageAlt: optionalImageAlt,
 };
 
 /** Correct option ids for gradable moments (Peer Instruction). */

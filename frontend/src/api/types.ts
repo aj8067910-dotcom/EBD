@@ -16,6 +16,8 @@ export interface MomentDTO {
   correctOptionIds: string[] | null;
   points: number;
   isPreClass: boolean;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
 }
 
 export interface LessonSummary {

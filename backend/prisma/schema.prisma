@@ -148,6 +148,10 @@ model Moment {
   correctOptionIds String?
   points           Int     @default(0)
   isPreClass       Boolean @default(false)
+  // Optional illustrative image (comic strip / cartoon / picture) shown with
+  // the moment on the projector and on students' phones.
+  imageUrl         String?
+  imageAlt         String?
 
   lesson  Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   answers Answer[]

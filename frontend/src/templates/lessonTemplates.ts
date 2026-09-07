@@ -8,6 +8,8 @@ export interface MomentDraft {
   isPreClass: boolean;
   config: Record<string, unknown>;
   correctOptionIds?: string[];
+  imageUrl?: string;
+  imageAlt?: string;
 }
 
 export interface LessonTemplate {

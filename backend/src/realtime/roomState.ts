@@ -82,6 +82,8 @@ export class RoomStateManager {
         correctOptionIds: m.correctOptionIds
           ? (safeParse(m.correctOptionIds) as unknown as string[])
           : null,
+        imageUrl: m.imageUrl ?? null,
+        imageAlt: m.imageAlt ?? null,
       });
     }
 
@@ -140,6 +142,8 @@ export class RoomStateManager {
       phase: room.activePhase ?? MomentPhase.DRAFT,
       points: moment.points,
       config: this.publicConfig(room, moment),
+      imageUrl: moment.imageUrl,
+      imageAlt: moment.imageAlt,
     };
   }
 

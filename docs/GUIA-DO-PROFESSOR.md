@@ -62,6 +62,30 @@ relatório. **Exemplo:** compromisso prático de cada aluno.
 *Tempo visível para discussões.* Base: dar limite claro mantém o ritmo.
 **Exemplo:** 2–3 minutos para a discussão do Peer Instruction.
 
+## 🖼️ Imagem no momento (apresentar casos como tirinha ou charge)
+
+Qualquer momento pode receber uma **imagem ilustrativa** — uma **tirinha**, uma
+**charge** ou uma foto — para apresentar um **caso** de forma visual em vez de
+só texto. Ela aparece **no projetor** e **no celular dos alunos**, acima da
+pergunta/atividade (e também na **pré-aula**, quando o momento é de pré-aula).
+
+**Como usar:**
+
+1. Ao **criar ou editar** um momento, abra o campo **“🖼️ Imagem do caso
+   (opcional)”**.
+2. **Hospede a imagem** em um serviço público (Google Fotos, Imgur, Google
+   Drive com link público, etc.) e **cole o link** que aponta direto para o
+   arquivo (termina em `.jpg`, `.png` ou `.webp`).
+3. Preencha a **legenda/descrição** — ela aparece como legenda e melhora a
+   **acessibilidade** (leitores de tela).
+4. A **pré-visualização** confirma se a imagem carregou. Se aparecer um aviso de
+   erro, verifique se o link é público e aponta para o arquivo da imagem.
+
+Na lista de momentos, os que têm imagem exibem a marca **“🖼️ com imagem”**.
+
+> Dica: prepare a charge/tirinha do caso e use um momento de **Pergunta aberta**
+> ou **Peer Instruction** logo em seguida para os alunos reagirem à situação.
+
 ## Um roteiro de 50 minutos (modelo padrão)
 
 1. **Revisão relâmpago** (Quiz, 3 perguntas) — recupera a lição anterior.

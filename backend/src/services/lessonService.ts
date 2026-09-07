@@ -95,6 +95,8 @@ export const lessonService = {
         correctOptionIds: m.correctOptionIds,
         points: m.points,
         isPreClass: m.isPreClass,
+        imageUrl: m.imageUrl ?? null,
+        imageAlt: m.imageAlt ?? null,
       });
     }
     return this.get(copy.id, teacherId);

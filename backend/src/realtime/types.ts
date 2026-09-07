@@ -8,6 +8,8 @@ export interface MomentRuntime {
   points: number;
   config: Record<string, unknown>;
   correctOptionIds: string[] | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
 }
 
 export interface ParticipantRuntime {

@@ -6,6 +6,7 @@ import { useRoomStore } from '../store/useRoomStore.js';
 import { connectScreen, disconnectSocket } from '../realtime/socket.js';
 import { Halftone, StarCluster, Timer } from '../ui/index.js';
 import { ScreenRenderer } from '../moments/screen/ScreenRenderer.js';
+import { MomentImage } from '../moments/MomentImage.js';
 
 export function Screen() {
   const { code = '' } = useParams();
@@ -103,14 +104,17 @@ export function Screen() {
             className="flex w-full items-center justify-center"
           >
             {activeMoment ? (
-              <ScreenRenderer
-                moment={activeMoment}
-                phase={phase}
-                results={results}
-                answeredCount={answeredCount}
-                timer={timer}
-                wall={wall}
-              />
+              <div className="flex w-full flex-col items-center gap-8">
+                <MomentImage moment={activeMoment} variant="screen" />
+                <ScreenRenderer
+                  moment={activeMoment}
+                  phase={phase}
+                  results={results}
+                  answeredCount={answeredCount}
+                  timer={timer}
+                  wall={wall}
+                />
+              </div>
             ) : (
               <div className="text-center">
                 <StarCluster className="mb-4 justify-center" />

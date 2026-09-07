@@ -5,6 +5,7 @@
  *   npm run deploy:check -w backend
  */
 import { PrismaClient } from '@prisma/client';
+import { collectEnvErrors } from '../src/config/validateDeploy.js';
 
 function fail(msg: string): never {
   console.error(`✗ ${msg}`);
@@ -12,18 +13,7 @@ function fail(msg: string): never {
 }
 
 async function main() {
-  const errors: string[] = [];
-
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) errors.push('DATABASE_URL ausente');
-
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < 8) {
-    errors.push('JWT_SECRET ausente ou muito curto (mín. 8 caracteres)');
-  }
-  if (secret && /change-me|dev-secret|e2e-secret/.test(secret)) {
-    errors.push('JWT_SECRET parece ser um valor de exemplo — gere um segredo real');
-  }
+  const errors = collectEnvErrors(process.env);
 
   if (!process.env.CORS_ORIGIN) {
     console.warn('⚠ CORS_ORIGIN não definido — usando o padrão de desenvolvimento');

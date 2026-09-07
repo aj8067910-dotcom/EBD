@@ -1,3 +1,6 @@
+/** App timezone for calendar-day semantics and scheduled sends (Brazil). */
+export const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/Sao_Paulo';
+
 /** Room join codes expire this long after creation (PARTE 7 security). */
 export const ROOM_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 

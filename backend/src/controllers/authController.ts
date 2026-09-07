@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { authService } from '../services/authService.js';
-import { setAuthCookie } from '../plugins/auth.js';
+import { setAuthCookie, clearAuthCookie } from '../plugins/auth.js';
 import { Errors } from '../errors.js';
 
 const registerSchema = z.object({
@@ -47,5 +47,10 @@ export const authController = {
     if (!request.teacherId) throw Errors.unauthorized();
     const teacher = await authService.me(request.teacherId);
     return reply.send({ teacher });
+  },
+
+  async logout(_request: FastifyRequest, reply: FastifyReply) {
+    clearAuthCookie(reply);
+    return reply.send({ ok: true });
   },
 };

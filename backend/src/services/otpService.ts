@@ -1,22 +1,40 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../prisma.js';
-import { allow } from '../realtime/rateLimit.js';
 import { getWhatsAppProvider } from '../integrations/whatsapp/index.js';
 import { Errors } from '../errors.js';
 
 const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_ATTEMPTS = 5;
 const OTP_COST = 8;
+// Rate limit: at most 5 code requests per number per 15-minute window. Counted
+// from the persisted OtpCode rows, so it holds across restarts and instances
+// (B-06) — no in-memory bucket that a second node could bypass.
+const OTP_REQUEST_WINDOW_MS = 15 * 60 * 1000;
+const MAX_OTP_REQUESTS = 5;
 
 function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+export type OtpPurpose = 'LOGIN' | 'REGISTER' | 'CHANGE_NUMBER';
+
 export const otpService = {
-  /** Generate, store (hashed) and send an OTP for a normalized number. */
-  async request(whatsappNumber: string, purpose: 'LOGIN' | 'REGISTER') {
-    // Rate limit: 5 requests / 15 min per number.
-    if (!allow(`otp:${whatsappNumber}`, 5, 15 * 60_000)) {
+  /**
+   * Generate, store (hashed) and send an OTP for a normalized number. Any
+   * pending flow state (register name / number-change userId) is persisted on
+   * the challenge so the flow survives a restart and works across instances.
+   */
+  async request(
+    whatsappNumber: string,
+    purpose: OtpPurpose,
+    extra?: { name?: string; userId?: string },
+  ) {
+    // Rate limit: 5 requests / 15 min per number (persistent/distributed).
+    const windowStart = new Date(Date.now() - OTP_REQUEST_WINDOW_MS);
+    const recentRequests = await prisma.otpCode.count({
+      where: { whatsappNumber, createdAt: { gte: windowStart } },
+    });
+    if (recentRequests >= MAX_OTP_REQUESTS) {
       throw Errors.tooManyRequests('Muitos códigos solicitados. Aguarde alguns minutos.');
     }
 
@@ -34,6 +52,8 @@ export const otpService = {
         whatsappNumber,
         codeHash,
         purpose,
+        name: extra?.name ?? null,
+        userId: extra?.userId ?? null,
         expiresAt: new Date(Date.now() + OTP_TTL_MS),
       },
     });
@@ -73,6 +93,23 @@ export const otpService = {
       where: { id: challenge.id },
       data: { consumed: true },
     });
-    return { purpose: challenge.purpose };
+    return {
+      purpose: challenge.purpose,
+      name: challenge.name,
+      userId: challenge.userId,
+    };
+  },
+
+  /** Latest active (unconsumed, unexpired) pending number-change for a user. */
+  async findPendingNumberChange(userId: string) {
+    return prisma.otpCode.findFirst({
+      where: {
+        userId,
+        purpose: 'CHANGE_NUMBER',
+        consumed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   },
 };

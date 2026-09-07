@@ -4,9 +4,6 @@ import { normalizePhone, maskPhone } from '../lib/phone.js';
 import { otpService } from './otpService.js';
 import { Errors } from '../errors.js';
 
-/** Pending self-registration names, keyed by E.164 (short-lived, in-memory). */
-const pendingNames = new Map<string, string>();
-
 function teacherAllowlist(): Set<string> {
   return new Set(
     env.TEACHER_WHATSAPP_ALLOWLIST.split(',')
@@ -59,22 +56,21 @@ export const whatsappAuthService = {
     const e164 = requireNormalized(whatsappNumber);
     const existing = await prisma.teacher.findUnique({ where: { whatsappNumber: e164 } });
     if (existing) throw Errors.conflict('Número já cadastrado');
-    pendingNames.set(e164, name.trim());
-    await otpService.request(e164, 'REGISTER');
+    // Persist the pending name on the OTP challenge (survives restart) — B-04.
+    await otpService.request(e164, 'REGISTER', { name: name.trim() });
     return { whatsappNumberMasked: maskPhone(e164) };
   },
 
   /** Step 2: verify the OTP; log in or finish registration. Returns the user. */
   async verify(whatsappNumber: string, code: string) {
     const e164 = requireNormalized(whatsappNumber);
-    const { purpose } = await otpService.verify(e164, code);
+    const { purpose, name: pendingName } = await otpService.verify(e164, code);
 
     let user = await prisma.teacher.findUnique({ where: { whatsappNumber: e164 } });
 
     if (purpose === 'REGISTER') {
       if (user) throw Errors.conflict('Número já cadastrado');
-      const name = pendingNames.get(e164) ?? 'Usuário';
-      pendingNames.delete(e164);
+      const name = pendingName?.trim() || 'Usuário';
       const role = teacherAllowlist().has(e164) ? 'TEACHER' : 'STUDENT';
       user = await prisma.teacher.create({
         data: {

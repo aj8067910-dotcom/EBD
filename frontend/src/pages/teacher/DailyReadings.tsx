@@ -14,12 +14,37 @@ import {
   type ReadingInput,
 } from '../../api/part10Hooks.js';
 import { TeacherNav } from '../../components/TeacherNav.js';
+import { ApiError } from '../../api/client.js';
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: '#6f665c',
   PUBLISHED: '#1f9d55',
+  SENDING: '#c77f0a',
   SENT: '#D91F1F',
+  PARTIALLY_SENT: '#c77f0a',
+  FAILED: '#8C0F14',
+  CANCELLED: '#6f665c',
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'RASCUNHO',
+  PUBLISHED: 'PUBLICADA',
+  SENDING: 'ENVIANDO',
+  SENT: 'ENVIADA',
+  PARTIALLY_SENT: 'ENVIO PARCIAL',
+  FAILED: 'FALHOU',
+  CANCELLED: 'CANCELADA',
+};
+
+/**
+ * Format a calendar date (YYYY-MM-DD or an ISO date) without timezone drift.
+ * The value is a calendar day, so we read it as UTC and print it as UTC — a
+ * reading dated 2026-09-07 always shows 07/09/2026 (B-07).
+ */
+function formatReadingDate(value: string): string {
+  const iso = value.length === 10 ? `${value}T00:00:00Z` : value;
+  return new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
 
 const empty: ReadingInput = {
   title: '',
@@ -47,13 +72,22 @@ export function DailyReadings() {
   const all = [...groups.today, ...groups.upcoming, ...groups.past];
 
   const doSend = async (reading: DailyReading, audience: 'ALL' | 'TEACHERS' | 'STUDENTS') => {
+    if (send.isPending) return; // prevent double-click / double-send
     const count = recipients?.total ?? 0;
     if (!window.confirm(`A leitura será enviada para ${count} pessoa(s) pelo WhatsApp. Continuar?`)) {
       return;
     }
-    const res = await send.mutateAsync({ id: reading.id, audience });
-    toast(`Enviando para ${res.recipientCount} pessoa(s)…`, 'success');
-    setPreview(null);
+    try {
+      const res = await send.mutateAsync({ id: reading.id, audience });
+      // 202 Accepted: only report success when the backend actually accepted it.
+      toast(`Enviando para ${res.recipientCount} pessoa(s)…`, 'success');
+      setPreview(null);
+    } catch (err) {
+      toast(
+        err instanceof ApiError ? err.message : 'Falha ao enviar. Tente novamente.',
+        'error',
+      );
+    }
   };
 
   return (
@@ -93,10 +127,10 @@ export function DailyReadings() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-ink">{r.title}</p>
                         <p className="text-sm text-muted">
-                          {r.reference} · {new Date(r.readingDate).toLocaleDateString('pt-BR')}
+                          {r.reference} · {formatReadingDate(r.readingDate)}
                         </p>
                       </div>
-                      <Badge color={STATUS_COLOR[r.status]}>{r.status}</Badge>
+                      <Badge color={STATUS_COLOR[r.status]}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
                       {(r.sentCount ?? 0) > 0 && (
                         <span className="text-xs text-muted">
                           {r.sentCount} enviada(s){(r.failedCount ?? 0) > 0 && ` · ${r.failedCount} falha(s)`}
@@ -158,11 +192,21 @@ export function DailyReadings() {
               <a href={readingArtPng(preview.id)} download={`leitura-${preview.id}.png`}>
                 <Button variant="secondary">Baixar arte</Button>
               </a>
-              <Button onClick={() => doSend(preview, 'ALL')}>Enviar para todos</Button>
-              <Button variant="secondary" onClick={() => doSend(preview, 'TEACHERS')}>
+              <Button disabled={send.isPending} onClick={() => doSend(preview, 'ALL')}>
+                {send.isPending ? 'Enviando…' : 'Enviar para todos'}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={send.isPending}
+                onClick={() => doSend(preview, 'TEACHERS')}
+              >
                 Só professores
               </Button>
-              <Button variant="secondary" onClick={() => doSend(preview, 'STUDENTS')}>
+              <Button
+                variant="secondary"
+                disabled={send.isPending}
+                onClick={() => doSend(preview, 'STUDENTS')}
+              >
                 Só alunos
               </Button>
             </div>

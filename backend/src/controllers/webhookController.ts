@@ -1,6 +1,34 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../prisma.js';
 import { env } from '../env.js';
+
+/**
+ * Validate Meta's X-Hub-Signature-256 header against the raw request body using
+ * the App Secret (B-10). Uses a constant-time comparison. When no App Secret is
+ * configured (dev/mock) validation is skipped. The secret is never logged.
+ */
+function verifySignature(request: FastifyRequest): boolean {
+  const secret = env.WHATSAPP_APP_SECRET;
+  if (!secret) return true; // signature validation disabled (dev/mock)
+
+  const header = request.headers['x-hub-signature-256'];
+  const signature = Array.isArray(header) ? header[0] : header;
+  if (!signature || !signature.startsWith('sha256=')) return false;
+
+  const raw = (request as unknown as { rawBody?: Buffer }).rawBody;
+  if (!raw) return false;
+
+  const expected = createHmac('sha256', secret).update(raw).digest('hex');
+  const provided = signature.slice('sha256='.length);
+  // Compare as fixed-length hex buffers with a timing-safe comparison.
+  if (provided.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(provided, 'hex'), Buffer.from(expected, 'hex'));
+  } catch {
+    return false;
+  }
+}
 
 interface StatusEvent {
   entry?: {
@@ -27,7 +55,12 @@ export const webhookController = {
    * known providerMessageIds are matched, and only status is updated.
    */
   async receive(request: FastifyRequest, reply: FastifyReply) {
-    const body = request.body as StatusEvent;
+    if (!verifySignature(request)) {
+      return reply
+        .status(401)
+        .send({ error: { code: 'INVALID_SIGNATURE', message: 'Assinatura inválida' } });
+    }
+    const body = (request.body ?? {}) as StatusEvent;
     const statuses =
       body.entry?.flatMap(
         (e) => e.changes?.flatMap((c) => c.value?.statuses ?? []) ?? [],

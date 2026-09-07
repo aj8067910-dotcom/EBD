@@ -33,6 +33,25 @@ function teacherId(request: FastifyRequest): string {
   return request.teacherId;
 }
 
+// Public art is cacheable and (once sent) immutable. Set validators/Cache-Control
+// so Meta and browsers cache it and repeated fetches short-circuit with 304 —
+// without ever requiring authentication (B-12).
+function notModified(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  etag: string,
+): boolean {
+  reply
+    .header('ETag', etag)
+    .header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+  const inm = request.headers['if-none-match'];
+  if (inm && (inm === etag || inm.split(',').some((v) => v.trim() === etag))) {
+    reply.status(304).send();
+    return true;
+  }
+  return false;
+}
+
 export const dailyReadingController = {
   async dashboard(request: FastifyRequest, reply: FastifyReply) {
     return reply.send(await dailyReadingService.dashboard(teacherId(request)));
@@ -74,6 +93,8 @@ export const dailyReadingController = {
   async artSvg(request: FastifyRequest, reply: FastifyReply) {
     const { id } = idParams.parse(request.params);
     const input = await dailyReadingService.getArtInput(id);
+    const etag = dailyReadingImageService.etag(input);
+    if (notModified(request, reply, etag)) return reply;
     return reply
       .header('Content-Type', 'image/svg+xml; charset=utf-8')
       .send(dailyReadingImageService.buildSvg(input));
@@ -82,7 +103,9 @@ export const dailyReadingController = {
   async artPng(request: FastifyRequest, reply: FastifyReply) {
     const { id } = idParams.parse(request.params);
     const input = await dailyReadingService.getArtInput(id);
-    const png = await dailyReadingImageService.toPng(input);
+    const etag = dailyReadingImageService.etag(input);
+    if (notModified(request, reply, etag)) return reply;
+    const png = await dailyReadingImageService.toPngCached(input);
     return reply
       .header('Content-Type', 'image/png')
       .header('Content-Disposition', `inline; filename="leitura-${id}.png"`)
@@ -101,11 +124,17 @@ export const dailyReadingController = {
         : { kind: audience };
     const users = await whatsappMessageService.resolveRecipients(aud);
 
-    // Fire-and-forget: never block the UI on delivery.
+    // Fire-and-forget: never block the UI on delivery. The reading status is
+    // derived from the real per-recipient results, never marked SENT blindly.
+    await dailyReadingService.markSending(id);
     void whatsappMessageService
       .dispatch(reading, users)
-      .then(() => dailyReadingService.markSent(id))
-      .catch((e) => console.error('[daily-reading send]', e));
+      .catch((e) => console.error('[daily-reading send]', e))
+      .finally(() => {
+        void dailyReadingService
+          .finalizeStatus(id)
+          .catch((e) => console.error('[daily-reading finalize]', e));
+      });
 
     return reply.status(202).send({ recipientCount: users.length });
   },

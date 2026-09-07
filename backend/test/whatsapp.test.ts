@@ -8,6 +8,7 @@ import { getMockProvider } from '../src/integrations/whatsapp/index.js';
 import { otpService } from '../src/services/otpService.js';
 import { dailyReadingImageService } from '../src/services/dailyReadingImage/DailyReadingImageService.js';
 import { whatsappMessageService } from '../src/services/whatsappMessageService.js';
+import { dailyReadingService } from '../src/services/dailyReadingService.js';
 import { runDueReadings } from '../src/jobs/dailyReadingJob.js';
 
 let app: FastifyInstance;
@@ -193,6 +194,57 @@ describe('daily readings', () => {
     });
     expect(png.length).toBeGreaterThan(1000);
   });
+
+  it('serves the art with an ETag + Cache-Control and honours If-None-Match (B-12)', async () => {
+    const teacher = await makeTeacher('+5574999997001');
+    const token = teacherToken(teacher.id);
+    const created = await request(server)
+      .post('/daily-readings')
+      .set('Authorization', `Bearer ${token}`)
+      .send(valid);
+    const id = created.body.reading.id;
+
+    const first = await request(server).get(`/daily-readings/${id}/art.png`);
+    expect(first.status).toBe(200);
+    expect(first.headers.etag).toBeTruthy();
+    expect(first.headers['cache-control']).toContain('public');
+
+    const cached = await request(server)
+      .get(`/daily-readings/${id}/art.png`)
+      .set('If-None-Match', first.headers.etag);
+    expect(cached.status).toBe(304);
+  });
+
+  it('freezes the art once a reading has been sent (B-09)', async () => {
+    const teacher = await makeTeacher('+5574999997010');
+    const token = teacherToken(teacher.id);
+    const created = await request(server)
+      .post('/daily-readings')
+      .set('Authorization', `Bearer ${token}`)
+      .send(valid);
+    const id = created.body.reading.id;
+    await prisma.dailyReading.update({ where: { id }, data: { status: 'SENT' } });
+
+    // Art-changing edit is rejected...
+    const blocked = await request(server)
+      .put(`/daily-readings/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Um título completamente novo' });
+    expect(blocked.status).toBe(409);
+
+    // ...but a non-art field (message) may still be updated.
+    const ok = await request(server)
+      .put(`/daily-readings/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ message: 'observação adicional' });
+    expect(ok.status).toBe(200);
+
+    // And a sent reading cannot be hard-deleted (B-20: audit preserved).
+    const del = await request(server)
+      .delete(`/daily-readings/${id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(del.status).toBe(409);
+  });
 });
 
 /* --------------------------------------------------------- sending + dedup */
@@ -274,5 +326,215 @@ describe('WhatsApp sending', () => {
     expect(count).toBeGreaterThanOrEqual(1);
     const after = await prisma.dailyReading.findUnique({ where: { id: reading.id } });
     expect(after?.status).toBe('SENT');
+  });
+});
+
+/* ---------------------------------------------- B-01: aggregate send status */
+
+describe('daily reading aggregate status (B-01)', () => {
+  async function setupReading() {
+    const teacher = await makeTeacher('+5574999991000');
+    return prisma.dailyReading.create({
+      data: {
+        teacherId: teacher.id,
+        title: 'Leitura',
+        verse: 'Versículo',
+        reference: 'Ref 1:1',
+        readingDate: new Date('2026-09-07'),
+        imageUrl: 'https://example.com/daily-readings/x/art.png',
+        status: 'PUBLISHED',
+      },
+    });
+  }
+
+  async function makeStudent(n: number) {
+    return prisma.teacher.create({
+      data: {
+        name: `Aluno ${n}`,
+        role: 'STUDENT',
+        whatsappNumber: `+557499999${String(2000 + n).padStart(4, '0')}`,
+        subscription: { create: {} },
+      },
+    });
+  }
+
+  it('2 recipients, both succeed -> SENT', async () => {
+    const reading = await setupReading();
+    const s1 = await makeStudent(1);
+    const s2 = await makeStudent(2);
+    await whatsappMessageService.dispatch(reading, [s1, s2]);
+    const result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('SENT');
+    expect(result.sent).toBe(2);
+    expect(result.reading.sentAt).toBeTruthy();
+  });
+
+  it('2 recipients, one fails -> PARTIALLY_SENT', async () => {
+    const reading = await setupReading();
+    const s1 = await makeStudent(1);
+    const s2 = await makeStudent(2);
+    getMockProvider().failCount = 1; // first send fails, second succeeds
+    await whatsappMessageService.dispatch(reading, [s1, s2]);
+    const result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('PARTIALLY_SENT');
+    expect(result.sent).toBe(1);
+    expect(result.failed).toBe(1);
+  });
+
+  it('2 recipients, both fail -> FAILED (never SENT)', async () => {
+    const reading = await setupReading();
+    const s1 = await makeStudent(1);
+    const s2 = await makeStudent(2);
+    getMockProvider().failAll = true;
+    await whatsappMessageService.dispatch(reading, [s1, s2]);
+    const result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('FAILED');
+    expect(result.sent).toBe(0);
+    expect(result.failed).toBe(2);
+    const after = await prisma.dailyReading.findUnique({ where: { id: reading.id } });
+    expect(after?.status).toBe('FAILED');
+    expect(after?.sentAt).toBeNull();
+  });
+
+  it('provider unavailable for all recipients -> FAILED', async () => {
+    const reading = await setupReading();
+    const s1 = await makeStudent(1);
+    getMockProvider().failAll = true;
+    await whatsappMessageService.dispatch(reading, [s1]);
+    const result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('FAILED');
+  });
+
+  it('no recipients -> SENT (nothing to deliver)', async () => {
+    const reading = await setupReading();
+    await whatsappMessageService.dispatch(reading, []);
+    const result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('SENT');
+    expect(result.sent).toBe(0);
+    expect(result.failed).toBe(0);
+  });
+
+  it('retry of a FAILED reading recovers it to SENT without duplicates', async () => {
+    const reading = await setupReading();
+    const s1 = await makeStudent(1);
+    getMockProvider().failAll = true;
+    await whatsappMessageService.dispatch(reading, [s1]);
+    let result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('FAILED');
+
+    // Provider recovers; re-dispatch retries the FAILED message in place.
+    getMockProvider().failAll = false;
+    await whatsappMessageService.dispatch(reading, [s1]);
+    result = await dailyReadingService.finalizeStatus(reading.id);
+    expect(result.status).toBe('SENT');
+
+    const messages = await prisma.whatsAppMessage.findMany({
+      where: { dailyReadingId: reading.id, userId: s1.id },
+    });
+    expect(messages).toHaveLength(1); // no duplicate row
+    expect(messages[0]!.status).toBe('SENT');
+  });
+
+  it('markSending flips a reading to SENDING', async () => {
+    const reading = await setupReading();
+    await dailyReadingService.markSending(reading.id);
+    const after = await prisma.dailyReading.findUnique({ where: { id: reading.id } });
+    expect(after?.status).toBe('SENDING');
+  });
+
+  it('dashboard aggregates delivery counts in one query (B-19)', async () => {
+    const reading = await setupReading();
+    const teacherId = reading.teacherId;
+    const s1 = await makeStudent(1);
+    const s2 = await makeStudent(2);
+    const s3 = await makeStudent(3);
+    // 2 SENT, 1 FAILED.
+    getMockProvider().failCount = 1;
+    await whatsappMessageService.dispatch(reading, [s1, s2, s3]);
+
+    const board = await dailyReadingService.dashboard(teacherId);
+    const all = [...board.today, ...board.upcoming, ...board.past];
+    const row = all.find((r) => r.id === reading.id)!;
+    expect(row.sentCount).toBe(2);
+    expect(row.failedCount).toBe(1);
+  });
+
+  it('concurrent dispatch of the same reading contacts each user once (B-05)', async () => {
+    const reading = await setupReading();
+    const s1 = await makeStudent(1);
+    // Two workers dispatch the same reading to the same user simultaneously.
+    await Promise.all([
+      whatsappMessageService.dispatch(reading, [s1]),
+      whatsappMessageService.dispatch(reading, [s1]),
+    ]);
+    const messages = await prisma.whatsAppMessage.findMany({
+      where: { dailyReadingId: reading.id, userId: s1.id },
+    });
+    expect(messages).toHaveLength(1);
+    expect(messages[0]!.status).toBe('SENT');
+    // The provider was called exactly once for this recipient.
+    const sends = getMockProvider().messages.filter(
+      (m) => m.to === s1.whatsappNumber && m.kind === 'daily_reading',
+    );
+    expect(sends).toHaveLength(1);
+  });
+});
+
+/* --------------------------------------------- B-04: persisted OTP state */
+
+describe('OTP-backed pending state (B-04)', () => {
+  it('persists the registration name on the challenge (no RAM state)', async () => {
+    const number = '+5574999995001';
+    await request(server)
+      .post('/auth/whatsapp/register')
+      .send({ name: 'Maria Silva', whatsappNumber: number });
+
+    const otp = await prisma.otpCode.findFirst({ where: { whatsappNumber: number } });
+    expect(otp?.name).toBe('Maria Silva');
+    expect(otp?.purpose).toBe('REGISTER');
+
+    // Verifying still uses the persisted name (survives a hypothetical restart).
+    const code = getMockProvider().getLastOtp(number)!;
+    const verify = await request(server)
+      .post('/auth/whatsapp/verify')
+      .send({ whatsappNumber: number, code });
+    expect(verify.status).toBe(200);
+    const user = await prisma.teacher.findUnique({ where: { whatsappNumber: number } });
+    expect(user?.name).toBe('Maria Silva');
+  });
+
+  it('completes a number change via persisted CHANGE_NUMBER challenge', async () => {
+    const original = '+5574999995010';
+    const user = await prisma.teacher.create({
+      data: { name: 'Troca', role: 'STUDENT', whatsappNumber: original, subscription: { create: {} } },
+    });
+    const newNumber = '+5574999995011';
+
+    const { profileService } = await import('../src/services/profileService.js');
+    await profileService.requestNumberChange(user.id, newNumber);
+
+    // The pending target is stored on the challenge, keyed by userId.
+    const pending = await prisma.otpCode.findFirst({
+      where: { userId: user.id, purpose: 'CHANGE_NUMBER' },
+    });
+    expect(pending?.whatsappNumber).toBe(newNumber);
+
+    const code = getMockProvider().getLastOtp(newNumber)!;
+    await profileService.confirmNumberChange(user.id, code);
+    const updated = await prisma.teacher.findUnique({ where: { id: user.id } });
+    expect(updated?.whatsappNumber).toBe(newNumber);
+  });
+
+  it('rejects a number change to an already-used number without a 500 (B-18)', async () => {
+    const other = await prisma.teacher.create({
+      data: { name: 'Dono', role: 'STUDENT', whatsappNumber: '+5574999995020' },
+    });
+    const user = await prisma.teacher.create({
+      data: { name: 'Quer', role: 'STUDENT', whatsappNumber: '+5574999995021' },
+    });
+    const { profileService } = await import('../src/services/profileService.js');
+    await expect(
+      profileService.requestNumberChange(user.id, other.whatsappNumber!),
+    ).rejects.toMatchObject({ statusCode: 409 });
   });
 });

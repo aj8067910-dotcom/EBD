@@ -13,6 +13,28 @@ export async function buildApp(): Promise<FastifyInstance> {
     logger: process.env.NODE_ENV !== 'test',
   });
 
+  // Capture the raw JSON body (as a Buffer) so the WhatsApp webhook can verify
+  // Meta's X-Hub-Signature-256 HMAC over the exact bytes received (B-10). The
+  // parsed value is still the decoded JSON, so all other routes are unaffected.
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    (req, body, done) => {
+      (req as unknown as { rawBody?: Buffer }).rawBody = body as Buffer;
+      const text = (body as Buffer).toString('utf8');
+      if (text.length === 0) {
+        done(null, undefined);
+        return;
+      }
+      try {
+        done(null, JSON.parse(text));
+      } catch (err) {
+        (err as { statusCode?: number }).statusCode = 400;
+        done(err as Error, undefined);
+      }
+    },
+  );
+
   registerErrorHandler(app);
 
   const helmet = await import('@fastify/helmet');

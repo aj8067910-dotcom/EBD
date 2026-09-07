@@ -30,6 +30,16 @@ export function setToken(token: string | null) {
   }
 }
 
+/** Log out: clear the httpOnly cookie server-side and drop the local token. */
+export async function logout(): Promise<void> {
+  try {
+    await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+  } catch {
+    // ignore network errors — clearing the local token below is what matters
+  }
+  setToken(null);
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;

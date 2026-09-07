@@ -18,4 +18,6 @@ export async function authRoutes(app: FastifyInstance) {
     { preHandler: app.requireTeacher },
     authController.me,
   );
+
+  app.post('/auth/logout', authController.logout);
 }

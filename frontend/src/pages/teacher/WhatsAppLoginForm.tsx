@@ -41,9 +41,11 @@ export function WhatsAppLoginForm() {
 
   const confirm = async () => {
     try {
-      await verify.mutateAsync({ whatsappNumber: number, code });
+      const { user } = await verify.mutateAsync({ whatsappNumber: number, code });
       await qc.invalidateQueries({ queryKey: ['me'] });
-      navigate('/teacher');
+      await qc.invalidateQueries({ queryKey: ['profile'] });
+      // Students land on their profile; teachers/admins on the teacher panel.
+      navigate(user.role === 'STUDENT' ? '/profile' : '/teacher', { replace: true });
     } catch (err) {
       toast(err instanceof ApiError ? err.message : 'Código inválido', 'error');
     }

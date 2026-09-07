@@ -1,5 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '../ui/index.js';
+import { logout } from '../api/client.js';
 
 const ITEMS = [
   { key: 'dashboard', label: 'Painel', to: '/teacher' },
@@ -9,6 +11,15 @@ const ITEMS = [
 
 /** Simple top navigation for teacher pages. */
 export function TeacherNav({ active }: { active?: string }) {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const doLogout = async () => {
+    await logout();
+    qc.clear();
+    navigate('/teacher/login', { replace: true });
+  };
+
   return (
     <nav className="mb-4 flex flex-wrap items-center gap-1 border-b border-line pb-3">
       <span className="mr-3 text-sm font-bold uppercase tracking-widest text-brand">
@@ -26,6 +37,13 @@ export function TeacherNav({ active }: { active?: string }) {
           {item.label}
         </Link>
       ))}
+      <button
+        type="button"
+        onClick={doLogout}
+        className="ml-auto rounded-lg px-3 py-1.5 text-sm font-semibold text-muted hover:text-ink"
+      >
+        Sair
+      </button>
     </nav>
   );
 }

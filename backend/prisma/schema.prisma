@@ -42,17 +42,25 @@ model Teacher {
 }
 
 // One-time password challenges for WhatsApp login (stored hashed, short-lived).
+// The challenge also carries the pending state needed to complete the flow so
+// nothing lives in process memory (survives restart / multi-instance) — B-04:
+//   REGISTER       -> `name` holds the pending self-registration name
+//   CHANGE_NUMBER  -> `userId` holds the user changing their number
 model OtpCode {
   id             String   @id @default(cuid())
   whatsappNumber String
   codeHash       String
-  purpose        String   @default("LOGIN") // LOGIN | REGISTER
+  purpose        String   @default("LOGIN") // LOGIN | REGISTER | CHANGE_NUMBER
   attempts       Int      @default(0)
   consumed       Boolean  @default(false)
   expiresAt      DateTime
   createdAt      DateTime @default(now())
+  // Pending flow state (see model comment).
+  name           String?
+  userId         String?
 
   @@index([whatsappNumber])
+  @@index([userId])
   @@index([expiresAt])
 }
 

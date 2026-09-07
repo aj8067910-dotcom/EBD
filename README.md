@@ -165,8 +165,25 @@ O provedor de WhatsApp é abstraído: `WHATSAPP_PROVIDER=mock` (dev/test, regist
 o OTP no log) ou `cloud` (WhatsApp Business/Graph API). Variáveis relevantes em
 `.env.example`: `PUBLIC_BASE_URL`, `WHATSAPP_PROVIDER`, `WHATSAPP_API_URL`,
 `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`,
-`WHATSAPP_OTP_TEMPLATE_NAME`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e
-`TEACHER_WHATSAPP_ALLOWLIST` (números que se auto-registram como professor).
+`WHATSAPP_OTP_TEMPLATE_NAME`, `WHATSAPP_DAILY_READING_TEMPLATE_NAME`,
+`WHATSAPP_TEMPLATE_LANGUAGE`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`
+e `TEACHER_WHATSAPP_ALLOWLIST` (números que se auto-registram como professor).
+
+Com `WHATSAPP_PROVIDER=cloud` o sistema **falha no boot** se faltar qualquer
+credencial obrigatória, template aprovado (OTP e leitura diária) ou o App Secret
+(usado para validar a assinatura `X-Hub-Signature-256` do webhook). Não há
+fallback silencioso para mensagem de texto livre — envios proativos usam
+**templates aprovados** da Meta (a leitura diária usa um template com cabeçalho
+de imagem apontando para a arte pública em `PUBLIC_BASE_URL`, que em produção
+deve ser uma URL `https://`).
+
+O status da leitura reflete o resultado real dos envios: `DRAFT` → `PUBLISHED` →
+`SENDING` → `SENT` / `PARTIALLY_SENT` / `FAILED`. Uma leitura já enviada tem a
+arte **congelada** (não é possível alterar título/versículo/referência/data) e
+não pode ser excluída, preservando o histórico de entregas. Reenviar uma leitura
+com falhas apenas repete os destinatários `FAILED` (nunca duplica os `SENT`).
+Recursos de **despublicar/cancelar** ainda não fazem parte do escopo e ficam como
+melhoria futura.
 
 ## Banco de dados
 

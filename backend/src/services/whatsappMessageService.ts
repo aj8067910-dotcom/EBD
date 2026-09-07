@@ -39,32 +39,52 @@ function caption(reading: DailyReading): string {
   return parts.join('\n\n');
 }
 
+/** Idempotently get-or-create the (reading, user) message row. */
+async function ensureMessageRow(readingId: string, userId: string) {
+  const where = {
+    dailyReadingId_userId_type: { dailyReadingId: readingId, userId, type: TYPE },
+  } as const;
+  const existing = await prisma.whatsAppMessage.findUnique({ where });
+  if (existing) return existing;
+  try {
+    return await prisma.whatsAppMessage.create({
+      data: { dailyReadingId: readingId, userId, type: TYPE, status: 'PENDING' },
+    });
+  } catch (err) {
+    // Lost the create race to another instance/worker — read the row it made.
+    if ((err as { code?: string }).code === 'P2002') {
+      const row = await prisma.whatsAppMessage.findUnique({ where });
+      if (row) return row;
+    }
+    throw err;
+  }
+}
+
 async function sendToUser(reading: DailyReading, user: Teacher): Promise<void> {
   if (!user.whatsappNumber) return;
 
-  const existing = await prisma.whatsAppMessage.findUnique({
-    where: {
-      dailyReadingId_userId_type: {
-        dailyReadingId: reading.id,
-        userId: user.id,
-        type: TYPE,
-      },
-    },
-  });
-  if (existing?.status === 'SENT') return; // dedup: already delivered
+  const message = await ensureMessageRow(reading.id, user.id);
+  if (message.status === 'SENT') return; // dedup: already delivered
 
-  const message =
-    existing ??
-    (await prisma.whatsAppMessage.create({
-      data: { dailyReadingId: reading.id, userId: user.id, type: TYPE, status: 'PENDING' },
-    }));
+  // B-05: atomically CLAIM this send before touching the provider. Only the
+  // instance that flips PENDING/FAILED -> SENDING proceeds; a concurrent worker
+  // sees count === 0 and backs off, so each recipient is contacted at most once
+  // even across multiple backend instances.
+  const claim = await prisma.whatsAppMessage.updateMany({
+    where: { id: message.id, status: { in: ['PENDING', 'FAILED'] } },
+    data: { status: 'SENDING', errorMessage: null },
+  });
+  if (claim.count === 0) return; // another worker owns this send (or already sent)
 
   try {
-    const result = await getWhatsAppProvider().sendImage(
-      user.whatsappNumber,
-      reading.imageUrl ?? '',
-      caption(reading),
-    );
+    const result = await getWhatsAppProvider().sendDailyReading(user.whatsappNumber, {
+      imageUrl: reading.imageUrl ?? '',
+      title: reading.title,
+      verse: reading.verse,
+      reference: reading.reference,
+      message: reading.message,
+      caption: caption(reading),
+    });
     await prisma.whatsAppMessage.update({
       where: { id: message.id },
       data: {
@@ -101,7 +121,9 @@ export const whatsappMessageService = {
     const [sent, failed, pending] = await Promise.all([
       prisma.whatsAppMessage.count({ where: { dailyReadingId, status: 'SENT' } }),
       prisma.whatsAppMessage.count({ where: { dailyReadingId, status: 'FAILED' } }),
-      prisma.whatsAppMessage.count({ where: { dailyReadingId, status: 'PENDING' } }),
+      prisma.whatsAppMessage.count({
+        where: { dailyReadingId, status: { in: ['PENDING', 'SENDING'] } },
+      }),
     ]);
     return { sent, failed, pending, total: sent + failed + pending };
   },

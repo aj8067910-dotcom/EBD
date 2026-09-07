@@ -5,9 +5,13 @@ export async function dailyReadingRoutes(app: FastifyInstance) {
   const auth = { preHandler: app.requireTeacher };
 
   // Public art (id-addressed) — the shareable image contains no private data,
-  // and must be fetchable by the WhatsApp provider.
-  app.get('/daily-readings/:id/art.svg', dailyReadingController.artSvg);
-  app.get('/daily-readings/:id/art.png', dailyReadingController.artPng);
+  // and must be fetchable by the WhatsApp provider without authentication.
+  // A generous per-IP limit curbs scraping/abuse while staying well above what
+  // Meta's distributed fetchers need; caching (ETag + Cache-Control) does the
+  // heavy lifting so honest repeat fetches are cheap (B-12).
+  const artLimit = { config: { rateLimit: { max: 240, timeWindow: '1 minute' } } };
+  app.get('/daily-readings/:id/art.svg', artLimit, dailyReadingController.artSvg);
+  app.get('/daily-readings/:id/art.png', artLimit, dailyReadingController.artPng);
 
   // Teacher management.
   app.get('/daily-readings', auth, dailyReadingController.dashboard);

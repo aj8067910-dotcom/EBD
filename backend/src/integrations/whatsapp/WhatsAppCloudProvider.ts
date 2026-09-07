@@ -1,5 +1,9 @@
 import { env } from '../../env.js';
-import type { WhatsAppProvider, WhatsAppSendResult } from './WhatsAppProvider.js';
+import type {
+  DailyReadingMessage,
+  WhatsAppProvider,
+  WhatsAppSendResult,
+} from './WhatsAppProvider.js';
 
 /**
  * Production provider using the official WhatsApp Business / Cloud API (Graph
@@ -53,28 +57,68 @@ export class WhatsAppCloudProvider implements WhatsAppProvider {
     });
   }
 
-  sendOtp(to: string, code: string): Promise<WhatsAppSendResult> {
-    // Prefer an approved template when configured; else fall back to text.
-    if (env.WHATSAPP_OTP_TEMPLATE_NAME) {
-      return this.post({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'template',
-        template: {
-          name: env.WHATSAPP_OTP_TEMPLATE_NAME,
-          language: { code: 'pt_BR' },
-          components: [
-            { type: 'body', parameters: [{ type: 'text', text: code }] },
-            {
-              type: 'button',
-              sub_type: 'url',
-              index: '0',
-              parameters: [{ type: 'text', text: code }],
-            },
-          ],
-        },
-      });
+  async sendOtp(to: string, code: string): Promise<WhatsAppSendResult> {
+    // The Cloud API can only deliver OTPs proactively via an approved template.
+    // Never fall back silently to free text — fail explicitly instead (B-02).
+    if (!env.WHATSAPP_OTP_TEMPLATE_NAME) {
+      throw new Error(
+        'WhatsApp Cloud OTP template is required when WHATSAPP_PROVIDER=cloud',
+      );
     }
-    return this.sendText(to, `Seu código de acesso Koinonia é ${code}. Expira em 5 minutos.`);
+    return this.post({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: env.WHATSAPP_OTP_TEMPLATE_NAME,
+        language: { code: env.WHATSAPP_TEMPLATE_LANGUAGE },
+        components: [
+          { type: 'body', parameters: [{ type: 'text', text: code }] },
+          {
+            type: 'button',
+            sub_type: 'url',
+            index: '0',
+            parameters: [{ type: 'text', text: code }],
+          },
+        ],
+      },
+    });
+  }
+
+  async sendDailyReading(
+    to: string,
+    input: DailyReadingMessage,
+  ): Promise<WhatsAppSendResult> {
+    // Proactive broadcast: an approved template with an image header is
+    // mandatory on the Cloud API. No free-text/image fallback (B-02).
+    if (!env.WHATSAPP_DAILY_READING_TEMPLATE_NAME) {
+      throw new Error(
+        'WhatsApp Cloud daily-reading template is required when WHATSAPP_PROVIDER=cloud',
+      );
+    }
+    if (!input.imageUrl || !/^https:\/\//i.test(input.imageUrl)) {
+      throw new Error(
+        'A imagem da leitura precisa de uma URL pública https:// para o cabeçalho do template',
+      );
+    }
+    return this.post({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: env.WHATSAPP_DAILY_READING_TEMPLATE_NAME,
+        language: { code: env.WHATSAPP_TEMPLATE_LANGUAGE },
+        components: [
+          {
+            type: 'header',
+            parameters: [{ type: 'image', image: { link: input.imageUrl } }],
+          },
+          {
+            type: 'body',
+            parameters: [{ type: 'text', text: input.caption }],
+          },
+        ],
+      },
+    });
   }
 }

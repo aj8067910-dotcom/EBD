@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Validate main and any working/feature branch pushed directly, so a change
+    # sent straight to a dev branch is never skipped by CI (B-14).
+    branches:
+      - main
+      - 'claude/**'
+      - 'feature/**'
+      - 'fix/**'
   pull_request:
 
 jobs:

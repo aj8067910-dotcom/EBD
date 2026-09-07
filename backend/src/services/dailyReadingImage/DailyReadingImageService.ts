@@ -52,6 +52,41 @@ function tspans(lines: string[], x: number, lineHeight: number): string {
     .join('');
 }
 
+/**
+ * Fits a block of text into a maximum height by shrinking the font until the
+ * wrapped lines fit. As a last resort (extremely long text) it truncates and
+ * appends an ellipsis so the block never overflows into the rest of the art.
+ */
+function fitBlock(
+  text: string,
+  opts: {
+    maxFont: number;
+    minFont: number;
+    widthFactor: number;
+    lineFactor: number;
+    maxHeight: number;
+    trailing?: string;
+  },
+): { fontSize: number; lines: string[]; lineHeight: number } {
+  const { maxFont, minFont, widthFactor, lineFactor, maxHeight, trailing = '' } = opts;
+  for (let f = maxFont; f >= minFont; f -= 2) {
+    const lines = wrap(text, f, widthFactor);
+    if (lines.length * f * lineFactor <= maxHeight) {
+      return { fontSize: f, lines, lineHeight: f * lineFactor };
+    }
+  }
+  const fontSize = minFont;
+  const lineHeight = fontSize * lineFactor;
+  let lines = wrap(text, fontSize, widthFactor);
+  const maxLines = Math.max(1, Math.floor(maxHeight / lineHeight));
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    const last = lines.length - 1;
+    lines[last] = (lines[last] ?? '').replace(/[\s"'“”]*$/, '') + `…${trailing}`;
+  }
+  return { fontSize, lines, lineHeight };
+}
+
 const STAR = 'M50 0 C54 34 66 46 100 50 C66 54 54 66 50 100 C46 66 34 54 0 50 C34 46 46 34 50 0 Z';
 
 function star(cx: number, cy: number, size: number, color: string, opacity = 1): string {
@@ -62,24 +97,52 @@ function star(cx: number, cy: number, size: number, color: string, opacity = 1):
 export const dailyReadingImageService = {
   /** Build the 1080×1080 art as an SVG string (El Shaday identity). */
   buildSvg(input: ReadingArtInput): string {
-    const titleLines = wrap(input.title.toUpperCase(), 84, 0.6);
-    const titleFont = titleLines.length > 2 ? 70 : 84;
-    const verseLines = wrap(`“${input.verse}”`, 42);
-
     const dateLabel = input.readingDate.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
     });
 
+    // Fixed anchors keep the reference capsule and footer clear of the verse,
+    // no matter how long the verse is.
+    const TITLE_TOP = 300;
+    const REF_CENTER_Y = 905;
+    const CAPSULE_H = 78;
+
+    // Title: shrink so it stays within ~3 lines when possible.
+    const title = fitBlock(input.title.toUpperCase(), {
+      maxFont: 84,
+      minFont: 46,
+      widthFactor: 0.6,
+      lineFactor: 1.05,
+      maxHeight: 3 * 84 * 1.05,
+    });
+    const titleFont = title.fontSize;
+    const titleLines = title.lines;
+    const titleFirstBaseline = TITLE_TOP + titleFont;
+    const titleBottom =
+      titleFirstBaseline + (titleLines.length - 1) * title.lineHeight + titleFont * 0.15;
+
+    // Verse: fit into the space between the title and the reference capsule.
+    const verseTop = titleBottom + 56;
+    const verseBottom = REF_CENTER_Y - CAPSULE_H / 2 - 54;
+    const verseMaxH = Math.max(120, verseBottom - verseTop);
+    const verse = fitBlock(`“${input.verse}”`, {
+      maxFont: 46,
+      minFont: 24,
+      widthFactor: 0.54,
+      lineFactor: 1.3,
+      maxHeight: verseMaxH,
+      trailing: '”',
+    });
+    const verseBlockH = verse.lines.length * verse.lineHeight;
+    const verseFirstBaseline =
+      verseTop + Math.max(0, (verseMaxH - verseBlockH) / 2) + verse.fontSize * 0.8;
+
     const refFont = 46;
     const refText = input.reference;
     const refWidth = Math.min(USABLE, refText.length * refFont * 0.62 + 96);
-
-    // Vertical layout anchored around the center.
-    const titleY = 430 - (titleLines.length - 1) * titleFont * 0.5;
-    const verseY = titleY + titleLines.length * titleFont * 1.02 + 90;
-    const refY = verseY + verseLines.length * 52 + 96;
+    const refY = REF_CENTER_Y + refFont * 0.34;
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">
   <defs>
@@ -112,13 +175,13 @@ export const dailyReadingImageService = {
   <text x="${SIZE / 2}" y="210" text-anchor="middle" class="display" fill="${OFFWHITE}"
         font-size="30" letter-spacing="10" opacity="0.85">KOINONIA CLASS · EL SHADAY</text>
 
-  <text x="${SIZE / 2}" y="${titleY}" text-anchor="middle" class="display" fill="${OFFWHITE}"
-        font-size="${titleFont}" letter-spacing="-2">${tspans(titleLines, SIZE / 2, titleFont * 1.02)}</text>
+  <text x="${SIZE / 2}" y="${titleFirstBaseline}" text-anchor="middle" class="display" fill="${OFFWHITE}"
+        font-size="${titleFont}" letter-spacing="-2">${tspans(titleLines, SIZE / 2, title.lineHeight)}</text>
 
-  <text x="${SIZE / 2}" y="${verseY}" text-anchor="middle" class="body" fill="${OFFWHITE}"
-        font-size="42" opacity="0.92">${tspans(verseLines, SIZE / 2, 52)}</text>
+  <text x="${SIZE / 2}" y="${verseFirstBaseline}" text-anchor="middle" class="body" fill="${OFFWHITE}"
+        font-size="${verse.fontSize}" opacity="0.92">${tspans(verse.lines, SIZE / 2, verse.lineHeight)}</text>
 
-  <rect x="${(SIZE - refWidth) / 2}" y="${refY - 46}" width="${refWidth}" height="72" rx="36" fill="${CORAL}"/>
+  <rect x="${(SIZE - refWidth) / 2}" y="${REF_CENTER_Y - CAPSULE_H / 2}" width="${refWidth}" height="${CAPSULE_H}" rx="${CAPSULE_H / 2}" fill="${CORAL}"/>
   <text x="${SIZE / 2}" y="${refY}" text-anchor="middle" class="display" fill="#111"
         font-size="${refFont}" letter-spacing="-1">${escapeXml(refText)}</text>
 

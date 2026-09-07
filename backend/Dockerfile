@@ -30,7 +30,11 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 # openssl for Prisma; fontconfig + DejaVu so sharp/librsvg can rasterize the
 # daily-reading art text (Alpine ships with no fonts → text renders as tofu).
-RUN apk add --no-cache openssl fontconfig ttf-dejavu && fc-cache -f
+RUN apk add --no-cache openssl fontconfig ttf-dejavu
+# Montserrat (OFL) is the brand font used in the daily-reading art. DejaVu stays
+# as a fallback for any missing glyph.
+COPY backend/assets/fonts/ /usr/share/fonts/montserrat/
+RUN fc-cache -f
 ENV NODE_ENV=production
 
 COPY --from=build /app/node_modules ./node_modules

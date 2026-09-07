@@ -160,8 +160,8 @@ export const dailyReadingImageService = {
     </radialGradient>
     <mask id="fadeMask"><rect width="${SIZE}" height="${SIZE}" fill="url(#fade)"/></mask>
     <style>
-      .display { font-family: 'Bricolage Grotesque Variable','Bricolage Grotesque','Arial Black',Arial,sans-serif; font-weight: 800; }
-      .body { font-family: 'Inter Variable',Inter,Arial,sans-serif; }
+      .display { font-family: 'Montserrat','Montserrat Variable',Arial,sans-serif; font-weight: 800; }
+      .body { font-family: 'Montserrat','Montserrat Variable',Arial,sans-serif; font-weight: 400; }
     </style>
   </defs>
 

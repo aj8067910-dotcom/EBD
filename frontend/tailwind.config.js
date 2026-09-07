@@ -24,8 +24,8 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter Variable',
-          'Inter',
+          'Montserrat Variable',
+          'Montserrat',
           'system-ui',
           '-apple-system',
           'Segoe UI',
@@ -33,10 +33,8 @@ export default {
           'sans-serif',
         ],
         display: [
-          'Bricolage Grotesque Variable',
-          'Bricolage Grotesque',
-          'Archivo',
-          'Inter',
+          'Montserrat Variable',
+          'Montserrat',
           'system-ui',
           'sans-serif',
         ],

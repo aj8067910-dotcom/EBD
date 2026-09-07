@@ -227,10 +227,12 @@ cat backup.sql | docker compose -f docker-compose.prod.yml exec -T postgres \
 
 ### Render (gerenciado, um provedor só) — `render.yaml`
 
-O repositório traz um **Blueprint** do Render que sobe banco + backend +
-frontend de uma vez. Passo a passo completo em **`docs/DEPLOY-RENDER.md`**
-(New + → Blueprint → apontar para o repo; depois preencher as URLs finais e o
-login de admin via `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+O repositório traz um **Blueprint** do Render que sobe backend + frontend de uma
+vez, usando um **banco Postgres externo no [Neon](https://neon.tech)** (grátis e
+sem a expiração de 30 dias do banco grátis do Render). Passo a passo completo em
+**`docs/DEPLOY-RENDER.md`** (criar banco no Neon → New + → Blueprint → apontar
+para o repo → preencher `DATABASE_URL`, as URLs finais e o login de admin via
+`ADMIN_EMAIL`/`ADMIN_PASSWORD`).
 
 ### Sem Docker (alternativa gerenciada)
 

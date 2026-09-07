@@ -1,18 +1,15 @@
 # Render Blueprint — Koinonia Class
 # ---------------------------------------------------------------------------
-# Cria, de uma vez: banco Postgres + API (backend) + site (frontend).
-# Passo a passo: Render Dashboard → New + → Blueprint → aponte para este repo.
+# Sobe a API (backend) + o site (frontend) no Render. O banco de dados é
+# externo (Neon/Supabase — Postgres grátis que não expira em 30 dias como o do
+# Render), informado em DATABASE_URL. Assim o blueprint não depende do limite
+# de "um banco grátis por workspace" do Render.
 #
+# Passo a passo: Render Dashboard → New + → Blueprint → aponte para este repo.
 # O JWT_SECRET é gerado automaticamente. Depois do 1º deploy você preenche os
-# campos marcados como `sync: false` (URLs finais e login de admin) e clica em
-# "Manual Deploy" nos dois serviços. Veja docs/DEPLOY-RENDER.md.
+# campos marcados como `sync: false` (DATABASE_URL, URLs finais e login de
+# admin) e clica em "Manual Deploy". Veja docs/DEPLOY-RENDER.md.
 # ---------------------------------------------------------------------------
-
-databases:
-  - name: koinonia-db
-    plan: free
-    databaseName: koinonia
-    user: koinonia
 
 services:
   # ----- API (backend Node/Fastify + Socket.IO, via Docker) ----------------
@@ -24,10 +21,10 @@ services:
     dockerContext: .
     healthCheckPath: /health
     envVars:
+      # String de conexão do banco Neon/Supabase (Postgres). Preencha com a
+      # connection string do Neon (inclui ?sslmode=require).
       - key: DATABASE_URL
-        fromDatabase:
-          name: koinonia-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true # gerado pelo Render, forte e único
       - key: NODE_ENV
